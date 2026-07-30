@@ -38,7 +38,10 @@ const testExports = `  resetState();
     hasInsufficientMaterial,
     positionKey,
     persistGame,
-    restorePersistedGame
+    restorePersistedGame,
+    setTimeControl,
+    setDifficulty,
+    setGraphicsQuality
   };
 })();`;
 
@@ -372,6 +375,32 @@ test('invalid FEN input is rejected without silently changing position', () => {
   chess.resetState();
   assert.throws(() => chess.loadFen('not a valid FEN'));
   assert.equal(chess.toFen(), 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+});
+
+test('time controls set standard clocks and increment safely', () => {
+  chess.resetState();
+  chess.setTimeControl('rapid15');
+  let state = chess.getState();
+  assert.equal(state.initialTime, 900);
+  assert.equal(state.increment, 10);
+  assert.equal(state.timers.w, 900);
+  chess.setTimeControl('none');
+  state = chess.getState();
+  assert.equal(state.initialTime, 0);
+  assert.equal(state.increment, 0);
+  assert.equal(state.timers.b, 0);
+});
+
+test('difficulty and graphics quality reject invalid configuration values', () => {
+  chess.resetState();
+  chess.setDifficulty('hard');
+  chess.setGraphicsQuality('cinematic');
+  assert.equal(chess.getState().difficulty, 'hard');
+  assert.equal(chess.getState().graphicsQuality, 'cinematic');
+  chess.setDifficulty('unknown');
+  chess.setGraphicsQuality('unknown');
+  assert.equal(chess.getState().difficulty, 'normal');
+  assert.equal(chess.getState().graphicsQuality, 'balanced');
 });
 
 test('insufficient material detects bare kings and a single minor piece', () => {
