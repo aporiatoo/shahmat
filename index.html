@@ -38,8 +38,15 @@
         <p class="menu-kicker">A GAME OF PATIENCE &amp; POWER</p>
         <h1 id="mainMenuTitle">تاج‌وتخت، در <em>دستان تو</em></h1>
         <p class="menu-description">به میدان نبرد با استاد هوشمند وارد شوید؛ قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
+        <div class="color-choice" aria-label="انتخاب رنگ مهره‌های بازیکن">
+          <span>رنگ مهره‌های شما</span>
+          <div>
+            <button class="color-choice-button active" id="chooseWhiteButton" data-player-color="w" type="button" aria-pressed="true"><i>♔</i><b>سفید</b></button>
+            <button class="color-choice-button" id="chooseBlackButton" data-player-color="b" type="button" aria-pressed="false"><i>♚</i><b>سیاه</b></button>
+          </div>
+        </div>
         <div class="menu-primary-actions">
-          <button class="menu-play-button" id="startBotButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع نبرد</b><small>شما سفید · استاد هوشمند سیاه</small></span></button>
+          <button class="menu-play-button" id="startBotButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع نبرد</b><small id="startGameSubtext">شما سفید · استاد هوشمند سیاه</small></span></button>
           <button class="menu-how-button" id="mainGuideButton" type="button"><span>؟</span> راهنمای سریع</button>
         </div>
         <div class="main-guide" id="mainGuide" hidden>
@@ -132,7 +139,7 @@
         </div>
 
         <section class="player-rail dark-rail" id="blackCard" aria-label="بازیکن سیاه">
-          <div class="avatar opponent-avatar"><span></span></div>
+          <div class="avatar opponent-avatar" id="blackAvatar"><span></span></div>
           <div class="rail-details"><strong id="blackPlayerName">آرش سلیمانی</strong><small><span class="signal"></span> بازیکن سیاه</small></div>
           <div class="clock dark-clock" id="blackClock">10:00</div>
         </section>
@@ -149,8 +156,8 @@
         <div class="board-footer"><div class="turn-guide"><span class="turn-piece">♙</span><span><b id="turnTitle">آماده‌ی شروع</b><small id="turnHint">برای آغاز، دکمه‌ی شروع نبرد را بزنید</small></span></div></div>
 
         <section class="player-rail light-rail" id="whiteCard" aria-label="بازیکن سفید">
-          <div class="avatar user-avatar">م</div>
-          <div class="rail-details"><strong>مریم</strong><small><span class="signal"></span> بازیکن سفید</small></div>
+          <div class="avatar user-avatar" id="whiteAvatar">م</div>
+          <div class="rail-details"><strong id="whitePlayerName">مریم</strong><small><span class="signal"></span> بازیکن سفید</small></div>
           <div class="clock light-clock" id="whiteClock">10:00</div>
         </section>
       </section>

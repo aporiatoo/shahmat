@@ -68,7 +68,10 @@
       fullmoveNumber: 1,
       positionHistory: [],
       mode: 'bot',
+      playerColor: 'w',
+      startedPlayerColor: 'w',
       botColor: 'b',
+      colorSelectionChanged: false,
       botThinking: false,
       resumable: false,
       autoSave: true,
@@ -106,7 +109,10 @@
       fullmoveNumber: state.fullmoveNumber,
       positionHistory: clonePlain(state.positionHistory),
       mode: state.mode,
+      playerColor: state.playerColor,
+      startedPlayerColor: state.startedPlayerColor,
       botColor: state.botColor,
+      colorSelectionChanged: state.colorSelectionChanged,
       botThinking: state.botThinking,
       resumable: state.resumable,
       autoSave: state.autoSave,
@@ -130,7 +136,10 @@
     state.fullmoveNumber = snapshot.fullmoveNumber ?? 1;
     state.positionHistory = clonePlain(snapshot.positionHistory) || [positionKey()];
     state.mode = 'bot';
-    state.botColor = 'b';
+    state.playerColor = snapshot.playerColor === 'b' ? 'b' : 'w';
+    state.startedPlayerColor = snapshot.startedPlayerColor === 'b' ? 'b' : state.playerColor;
+    state.botColor = opposite(state.playerColor);
+    state.colorSelectionChanged = Boolean(snapshot.colorSelectionChanged);
     state.botThinking = false;
     state.resumable = Boolean(snapshot.resumable);
     state.autoSave = snapshot.autoSave !== false;
@@ -660,12 +669,13 @@
     if (!threeBoard) return;
     const { camera, target, desiredCamera, desiredTarget } = threeBoard;
     const selectedPiece = state.selected && state.board[state.selected.y][state.selected.x];
-    const followsPlayerPiece = selectedPiece?.color === 'w';
+    const followsPlayerPiece = selectedPiece?.color === state.playerColor;
     const selectedX = followsPlayerPiece ? state.selected.x - 3.5 : 0;
     const selectedZ = followsPlayerPiece ? state.selected.y - 3.5 : 0;
+    const direction = state.playerColor === 'w' ? 1 : -1;
     const zoom = state.focused ? .91 : 1;
-    desiredTarget.set(selectedX * .48, .34, (followsPlayerPiece ? selectedZ * .42 - .45 : -.55));
-    desiredCamera.set(selectedX * .32, 13.1 * zoom, (followsPlayerPiece ? selectedZ + 10.7 : 13.35) * zoom);
+    desiredTarget.set(selectedX * .48, .34, (followsPlayerPiece ? selectedZ * .42 - direction * .45 : -direction * .55));
+    desiredCamera.set(selectedX * .32, 13.1 * zoom, (followsPlayerPiece ? selectedZ + direction * 10.7 : direction * 13.35) * zoom);
     camera.fov = state.focused ? 43 : 47;
     if (!threeBoard.cameraReady) {
       camera.position.copy(desiredCamera);
@@ -863,7 +873,7 @@
     if (!threeBoard || !state.gameStarted || state.gameOver || state.botThinking) return;
     const square = resolveThreeSquare(event);
     const piece = square && state.board[square.y][square.x];
-    if (!piece || piece.color !== state.turn) return;
+    if (!piece || piece.color !== state.turn || piece.color !== state.playerColor) return;
     threeBoard.dragSource = square;
     threeBoard.canvas.setPointerCapture?.(event.pointerId);
     threeBoard.canvas.style.cursor = 'grabbing';
@@ -1052,7 +1062,7 @@
     document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (idle ? 'برای آغاز، دکمه‌ی شروع نبرد را بزنید' : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`));
     document.querySelector('.turn-piece').textContent = state.gameOver ? '♔' : unicodePieces[state.turn].p;
     document.getElementById('moveCounter').textContent = `حرکت ${farsiMoveNumber(Math.ceil(state.moves.length / 2))} از ۶۰`;
-    document.getElementById('orientationText').textContent = 'نمای پشت مهره‌های شما';
+    document.getElementById('orientationText').textContent = `نمای پشت مهره‌های ${state.playerColor === 'w' ? 'سفید' : 'سیاه'} شما`;
     const wStatus = document.getElementById('whiteKingStatus');
     const bStatus = document.getElementById('blackKingStatus');
     const whiteChecked = isKingInCheck('w');
@@ -1062,7 +1072,22 @@
     wStatus.className = whiteChecked ? 'warning' : 'safe';
     bStatus.className = blackChecked ? 'warning' : 'safe';
     document.getElementById('lastMoveText').textContent = state.moves.length ? state.moves[state.moves.length - 1].notation : '—';
-    document.getElementById('blackPlayerName').textContent = state.mode === 'bot' && state.botColor === 'b' ? 'استاد هوشمند' : 'آرش سلیمانی';
+    document.getElementById('blackPlayerName').textContent = state.playerColor === 'b' ? 'مریم' : 'استاد هوشمند';
+    document.getElementById('whitePlayerName').textContent = state.playerColor === 'w' ? 'مریم' : 'استاد هوشمند';
+    const blackAvatar = document.getElementById('blackAvatar');
+    const whiteAvatar = document.getElementById('whiteAvatar');
+    if (state.playerColor === 'b') {
+      blackAvatar.className = 'avatar user-avatar';
+      blackAvatar.textContent = 'م';
+      whiteAvatar.className = 'avatar opponent-avatar';
+      whiteAvatar.innerHTML = '<span></span>';
+    } else {
+      blackAvatar.className = 'avatar opponent-avatar';
+      blackAvatar.innerHTML = '<span></span>';
+      whiteAvatar.className = 'avatar user-avatar';
+      whiteAvatar.textContent = 'م';
+    }
+    updateColorChoiceUI();
     document.getElementById('focusLabel').textContent = state.focused ? 'روشن' : 'خاموش';
     document.getElementById('soundLabel').textContent = soundOn ? 'روشن' : 'خاموش';
     document.getElementById('themeLabel').textContent = document.body.classList.contains('alt-light') ? 'کهربایی' : 'زمردی';
@@ -1143,8 +1168,8 @@
       if (enemyInCheck) {
         suffix = '#';
         gameEnd = {
-          title: `شاه‌مات · ${piece.color === 'w' ? 'سفید' : 'سیاه'} پیروز شد`,
-          description: `شاه ${piece.color === 'w' ? 'سیاه' : 'سفید'} هیچ خانه‌ی امنی ندارد. یک بازی درخشان بود.`
+          title: `شاه‌مات · ${piece.color === state.playerColor ? 'شما' : 'استاد هوشمند'} پیروز شد`,
+          description: `شاه ${piece.color === state.playerColor ? 'استاد هوشمند' : 'شما'} هیچ خانه‌ی امنی ندارد. یک بازی درخشان بود.`
         };
       } else {
         gameEnd = { title: 'پات · بازی مساوی شد', description: 'بازیکنِ نوبت‌دار حرکتی قانونی ندارد، اما شاه در کیش نیست.' };
@@ -1184,7 +1209,7 @@
       return;
     }
     const piece = state.board[target.y][target.x];
-    if (piece?.color === state.turn) {
+    if (piece?.color === state.turn && piece.color === state.playerColor) {
       state.selected = target;
       state.legalMoves = getLegalMoves(target);
       state.hint = null;
@@ -1219,11 +1244,12 @@
   }
 
   function newGame() {
-    const mode = state.mode;
-    const botColor = state.botColor;
+    const playerColor = state.playerColor;
     resetState();
-    state.mode = mode;
-    state.botColor = botColor;
+    state.mode = 'bot';
+    state.playerColor = playerColor;
+    state.startedPlayerColor = playerColor;
+    state.botColor = opposite(playerColor);
     state.gameStarted = true;
     state.resumable = true;
     state.autoSave = true;
@@ -1274,6 +1300,8 @@
         fullmoveNumber: state.fullmoveNumber,
         positionHistory: state.positionHistory,
         mode: state.mode,
+        playerColor: state.playerColor,
+        startedPlayerColor: state.startedPlayerColor,
         botColor: state.botColor,
         flipped: state.flipped,
         focused: state.focused,
@@ -1314,7 +1342,10 @@
       state.fullmoveNumber = Math.max(1, Number(saved.fullmoveNumber) || 1);
       state.positionHistory = Array.isArray(saved.positionHistory) && saved.positionHistory.length ? saved.positionHistory : [positionKey()];
       state.mode = 'bot';
-      state.botColor = 'b';
+      state.playerColor = saved.playerColor === 'b' ? 'b' : 'w';
+      state.startedPlayerColor = saved.startedPlayerColor === 'b' ? 'b' : state.playerColor;
+      state.botColor = opposite(state.playerColor);
+      state.colorSelectionChanged = false;
       state.flipped = false;
       state.focused = Boolean(saved.focused);
       state.botThinking = false;
@@ -1457,31 +1488,57 @@
     menuToggle.classList.remove('active');
   }
 
+  function updateColorChoiceUI() {
+    const color = state.playerColor;
+    document.querySelectorAll('[data-player-color]').forEach(button => {
+      const selected = button.dataset.playerColor === color;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+    const subtext = document.getElementById('startGameSubtext');
+    if (subtext) subtext.textContent = color === 'w' ? 'شما سفید · استاد هوشمند سیاه' : 'شما سیاه · استاد هوشمند سفید';
+  }
+
+  function selectPlayerColor(color) {
+    if (color !== 'w' && color !== 'b') return;
+    state.playerColor = color;
+    state.botColor = opposite(color);
+    state.colorSelectionChanged = state.resumable && color !== state.startedPlayerColor;
+    updateColorChoiceUI();
+    syncThreeBoard();
+  }
+
   function openMainMenu() {
     closeGameMenu();
     mainMenu.classList.remove('is-hidden');
     document.body.classList.add('menu-open');
     const startLabel = document.getElementById('startGameText');
     const startSubline = document.querySelector('#startBotButton small');
+    const colorSubtitle = state.playerColor === 'w' ? 'شما سفید · استاد هوشمند سیاه' : 'شما سیاه · استاد هوشمند سفید';
     if (state.gameOver) {
       startLabel.textContent = 'شروع نبرد تازه';
-      startSubline.textContent = 'شما سفید · استاد هوشمند سیاه';
+      startSubline.textContent = colorSubtitle;
     } else if (state.gameStarted || state.resumable) {
       startLabel.textContent = 'ادامه‌ی نبرد';
-      startSubline.textContent = 'بازی تا بازگشت شما متوقف است';
+      startSubline.textContent = state.colorSelectionChanged ? colorSubtitle : 'بازی تا بازگشت شما متوقف است';
     } else {
       startLabel.textContent = 'شروع نبرد';
-      startSubline.textContent = 'شما سفید · استاد هوشمند سیاه';
+      startSubline.textContent = colorSubtitle;
     }
   }
 
   function startSoloGame() {
-    if (state.gameOver) {
+    const selectedColor = state.playerColor;
+    if (state.gameOver || state.colorSelectionChanged) {
       resetState();
       endgameModal.hidden = true;
+      state.playerColor = selectedColor;
+      state.startedPlayerColor = selectedColor;
+      state.colorSelectionChanged = false;
     }
     state.mode = 'bot';
-    state.botColor = 'b';
+    state.botColor = opposite(state.playerColor);
+    state.startedPlayerColor = state.playerColor;
     state.gameStarted = true;
     state.resumable = true;
     state.autoSave = true;
@@ -1489,7 +1546,7 @@
     mainMenu.classList.add('is-hidden');
     document.body.classList.remove('menu-open');
     render();
-    showToast(state.moves.length ? 'نبرد با استاد هوشمند ادامه پیدا کرد.' : 'نبرد آغاز شد؛ شما با مهره‌های سفید بازی می‌کنید.');
+    showToast(state.moves.length ? 'نبرد با استاد هوشمند ادامه پیدا کرد.' : `نبرد آغاز شد؛ شما با مهره‌های ${state.playerColor === 'w' ? 'سفید' : 'سیاه'} بازی می‌کنید.`);
     if (state.turn === state.botColor) scheduleBotMove();
   }
 
@@ -1519,7 +1576,7 @@
     if (state.timers[state.turn] <= 0) {
       state.timers[state.turn] = 0;
       const winner = opposite(state.turn);
-      endGame('زمان تمام شد', `زمان بازیکن ${state.turn === 'w' ? 'سفید' : 'سیاه'} به پایان رسید؛ ${winner === 'w' ? 'سفید' : 'سیاه'} برنده شد.`);
+      endGame('زمان تمام شد', `زمان ${state.turn === state.playerColor ? 'شما' : 'استاد هوشمند'} به پایان رسید؛ ${winner === state.playerColor ? 'شما' : 'استاد هوشمند'} برنده شد.`);
       render();
       return;
     }
@@ -1530,6 +1587,7 @@
   function wireControls() {
     boardEl.addEventListener('click', handleSquareClick);
     document.getElementById('startBotButton').addEventListener('click', startSoloGame);
+    document.querySelectorAll('[data-player-color]').forEach(button => button.addEventListener('click', () => selectPlayerColor(button.dataset.playerColor)));
     document.getElementById('mainGuideButton').addEventListener('click', () => {
       const guide = document.getElementById('mainGuide');
       guide.hidden = !guide.hidden;

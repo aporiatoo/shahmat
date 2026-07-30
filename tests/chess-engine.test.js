@@ -120,6 +120,8 @@ test('initial position has exactly 20 legal white moves', () => {
   chess.resetState();
   assert.equal(chess.getAllLegalMoves('w').length, 20);
   assert.equal(chess.getAllLegalMoves('b').length, 20);
+  assert.equal(chess.getState().playerColor, 'w');
+  assert.equal(chess.getState().botColor, 'b');
 });
 
 test('initial e-pawn can advance one or two squares', () => {
@@ -344,7 +346,9 @@ test('local persistence restores a paused resumable solo game with settings', ()
   const before = chess.getState();
   before.timers = { w: 543, b: 411 };
   before.mode = 'bot';
-  before.botColor = 'b';
+  before.playerColor = 'b';
+  before.startedPlayerColor = 'b';
+  before.botColor = 'w';
   before.flipped = true;
   before.focused = true;
   before.gameStarted = true;
@@ -356,6 +360,8 @@ test('local persistence restores a paused resumable solo game with settings', ()
   assert.equal(after.timers.w, 543);
   assert.equal(after.timers.b, 411);
   assert.equal(after.mode, 'bot');
+  assert.equal(after.playerColor, 'b');
+  assert.equal(after.botColor, 'w');
   assert.equal(after.flipped, false);
   assert.equal(after.focused, true);
   assert.equal(after.gameStarted, false);
