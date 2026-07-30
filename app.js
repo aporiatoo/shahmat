@@ -8,6 +8,10 @@
   const promotionModal = document.getElementById('promotionModal');
   const promotionChoices = document.getElementById('promotionChoices');
   const endgameModal = document.getElementById('endgameModal');
+  const mainMenu = document.getElementById('mainMenu');
+  const gameMenu = document.getElementById('gameMenu');
+  const menuScrim = document.getElementById('menuScrim');
+  const menuToggle = document.getElementById('menuToggle');
   const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   const pieces = { p: 'پیاده', n: 'اسب', b: 'فیل', r: 'رخ', q: 'وزیر', k: 'شاه' };
   const notationPieces = { p: '', n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' };
@@ -60,6 +64,7 @@
       capturedBy: { w: [], b: [] },
       timers: { w: 600, b: 600 },
       gameOver: false,
+      gameStarted: false,
       result: '',
       resultDescription: '',
       flipped: false,
@@ -88,6 +93,7 @@
       capturedBy: { w: clonePlain(state.capturedBy.w), b: clonePlain(state.capturedBy.b) },
       timers: { ...state.timers },
       gameOver: state.gameOver,
+      gameStarted: state.gameStarted,
       result: state.result,
       resultDescription: state.resultDescription
     };
@@ -103,6 +109,7 @@
     state.capturedBy = { w: clonePlain(snapshot.capturedBy.w), b: clonePlain(snapshot.capturedBy.b) };
     state.timers = { ...snapshot.timers };
     state.gameOver = snapshot.gameOver;
+    state.gameStarted = snapshot.gameStarted;
     state.result = snapshot.result;
     state.resultDescription = snapshot.resultDescription;
     state.selected = null;
@@ -373,11 +380,14 @@
   }
 
   function renderCaptured() {
-    const el = document.getElementById('blackCaptured');
-    const captured = state.capturedBy.b;
-    el.innerHTML = captured.map(p => `<span class="captured-token ${p.color}">${unicodePieces[p.color][p.type]}</span>`).join('');
     const values = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-    document.getElementById('blackCapturedValue').textContent = `+${captured.reduce((total, p) => total + values[p.type], 0)}`;
+    const paintCaptured = (color, elementId, valueId) => {
+      const captured = state.capturedBy[color];
+      document.getElementById(elementId).innerHTML = captured.map(piece => `<span class="captured-token ${piece.color}">${unicodePieces[piece.color][piece.type]}</span>`).join('');
+      document.getElementById(valueId).textContent = `+${captured.reduce((total, piece) => total + values[piece.type], 0)}`;
+    };
+    paintCaptured('w', 'whiteCaptured', 'whiteCapturedValue');
+    paintCaptured('b', 'blackCaptured', 'blackCapturedValue');
   }
 
   function timeString(total) {
@@ -387,20 +397,25 @@
   }
 
   function renderClocks() {
+    const whiteTime = timeString(state.timers.w);
+    const blackTime = timeString(state.timers.b);
     const white = document.getElementById('whiteClock');
     const black = document.getElementById('blackClock');
-    white.textContent = timeString(state.timers.w);
-    black.textContent = timeString(state.timers.b);
-    white.classList.toggle('active', !state.gameOver && state.turn === 'w');
-    black.classList.toggle('active', !state.gameOver && state.turn === 'b');
+    white.textContent = whiteTime;
+    black.textContent = blackTime;
+    document.getElementById('drawerWhiteClock').textContent = whiteTime;
+    document.getElementById('drawerBlackClock').textContent = blackTime;
+    white.classList.toggle('active', state.gameStarted && !state.gameOver && state.turn === 'w');
+    black.classList.toggle('active', state.gameStarted && !state.gameOver && state.turn === 'b');
   }
 
   function renderStatus() {
     const inCheck = isKingInCheck(state.turn);
     const colorName = state.turn === 'w' ? 'سفید' : 'سیاه';
-    document.getElementById('statusText').textContent = state.gameOver ? state.result : `بازی دوستانه · نوبت ${colorName}${inCheck ? ' · کیش' : ''}`;
-    document.getElementById('turnTitle').textContent = state.gameOver ? 'نبرد تمام شد' : `نوبت ${colorName} است`;
-    document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`);
+    const idle = !state.gameStarted;
+    document.getElementById('statusText').textContent = state.gameOver ? state.result : (idle ? 'آماده‌ی شروع دوئل' : `بازی دوستانه · نوبت ${colorName}${inCheck ? ' · کیش' : ''}`);
+    document.getElementById('turnTitle').textContent = state.gameOver ? 'نبرد تمام شد' : (idle ? 'دوئل آماده است' : `نوبت ${colorName} است`);
+    document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (idle ? 'برای آغاز، دکمه‌ی شروع دوئل را بزنید' : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`));
     document.querySelector('.turn-piece').textContent = state.gameOver ? '♔' : unicodePieces[state.turn].p;
     document.getElementById('moveCounter').textContent = `حرکت ${farsiMoveNumber(Math.ceil(state.moves.length / 2))} از ۶۰`;
     document.getElementById('orientationText').textContent = state.flipped ? 'دید سیاه' : 'دید سفید';
@@ -413,6 +428,9 @@
     wStatus.className = whiteChecked ? 'warning' : 'safe';
     bStatus.className = blackChecked ? 'warning' : 'safe';
     document.getElementById('lastMoveText').textContent = state.moves.length ? state.moves[state.moves.length - 1].notation : '—';
+    document.getElementById('focusLabel').textContent = state.focused ? 'روشن' : 'خاموش';
+    document.getElementById('soundLabel').textContent = soundOn ? 'روشن' : 'خاموش';
+    document.getElementById('themeLabel').textContent = document.body.classList.contains('alt-light') ? 'کهربایی' : 'زمردی';
     boardStage.classList.toggle('flipped', state.flipped);
     boardStage.classList.toggle('focused', state.focused);
     renderClocks();
@@ -457,6 +475,7 @@
     document.getElementById('endgameTitle').textContent = title;
     document.getElementById('endgameDescription').textContent = description;
     endgameModal.hidden = false;
+    renderStatus();
   }
 
   function completeMove(from, move, promotion = null) {
@@ -510,7 +529,7 @@
 
   function handleSquareClick(event) {
     const square = event.target.closest('.square');
-    if (!square || state.gameOver || state.pendingPromotion) return;
+    if (!square || !state.gameStarted || state.gameOver || state.pendingPromotion) return;
     const target = { y: Number(square.dataset.y), x: Number(square.dataset.x) };
     const selectedMove = state.legalMoves.find(move => move.y === target.y && move.x === target.x);
     if (state.selected && selectedMove) {
@@ -534,7 +553,7 @@
   }
 
   function undoMove() {
-    if (!state.snapshots.length || state.pendingPromotion) {
+    if (!state.gameStarted || !state.snapshots.length || state.pendingPromotion) {
       showToast('حرکتی برای بازگشت وجود ندارد.');
       return;
     }
@@ -546,27 +565,31 @@
 
   function newGame() {
     resetState();
+    state.gameStarted = true;
     promotionModal.hidden = true;
     endgameModal.hidden = true;
+    closeGameMenu();
     render();
-    showToast('صفحه آماده است؛ سفید آغاز می‌کند.');
+    showToast('بازی تازه آماده است؛ سفید آغاز می‌کند.');
   }
 
   function resignGame() {
-    if (state.gameOver) return;
+    if (!state.gameStarted || state.gameOver) return;
     const winner = state.turn === 'w' ? 'سیاه' : 'سفید';
     endGame(`تسلیم · ${winner} پیروز شد`, `بازیکن ${state.turn === 'w' ? 'سفید' : 'سیاه'} بازی را واگذار کرد.`);
+    closeGameMenu();
     render();
   }
 
   function giveHint() {
-    if (state.gameOver) return;
+    if (!state.gameStarted || state.gameOver) return;
     const moves = getAllLegalMoves(state.turn);
     if (!moves.length) return;
     const central = moves.filter(({ move }) => move.x >= 2 && move.x <= 5 && move.y >= 2 && move.y <= 5);
     const suggestion = (central.length ? central : moves)[Math.floor(Math.random() * (central.length ? central.length : moves.length))];
     state.hint = { from: suggestion.from, to: { y: suggestion.move.y, x: suggestion.move.x } };
-    document.getElementById('coachText').textContent = `پیشنهاد: ${squareName(suggestion.from.y, suggestion.from.x)} به ${squareName(suggestion.move.y, suggestion.move.x)} را بررسی کنید.`;
+    const tip = coachTips[Math.floor(Math.random() * coachTips.length)];
+    document.getElementById('coachText').textContent = `پیشنهاد: ${squareName(suggestion.from.y, suggestion.from.x)} به ${squareName(suggestion.move.y, suggestion.move.x)}. ${tip}`;
     render();
   }
 
@@ -608,8 +631,66 @@
     } catch { /* Sound is an optional enhancement. */ }
   }
 
+  function openGameMenu() {
+    gameMenu.classList.add('is-open');
+    menuScrim.classList.add('is-open');
+    gameMenu.setAttribute('aria-hidden', 'false');
+    menuToggle.setAttribute('aria-expanded', 'true');
+    menuToggle.classList.add('active');
+  }
+
+  function closeGameMenu() {
+    gameMenu.classList.remove('is-open');
+    menuScrim.classList.remove('is-open');
+    gameMenu.setAttribute('aria-hidden', 'true');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    menuToggle.classList.remove('active');
+  }
+
+  function openMainMenu() {
+    closeGameMenu();
+    mainMenu.classList.remove('is-hidden');
+    document.body.classList.add('menu-open');
+    const startLabel = document.getElementById('startGameText');
+    const startSubline = document.querySelector('#startGameButton small');
+    if (state.gameOver) {
+      startLabel.textContent = 'شروع بازی تازه';
+      startSubline.textContent = 'چیدمان جدید · ساعت تازه';
+    } else if (state.gameStarted) {
+      startLabel.textContent = 'ادامه‌ی دوئل';
+      startSubline.textContent = 'بازی تا بازگشت شما متوقف است';
+    } else {
+      startLabel.textContent = 'شروع دوئل';
+      startSubline.textContent = 'دو بازیکن · یک دستگاه';
+    }
+  }
+
+  function startGame() {
+    if (state.gameOver) {
+      resetState();
+      endgameModal.hidden = true;
+    }
+    state.gameStarted = true;
+    mainMenu.classList.add('is-hidden');
+    document.body.classList.remove('menu-open');
+    render();
+    showToast('دوئل آغاز شد؛ نوبت مهره‌های سفید است.');
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle('alt-light');
+    renderStatus();
+    showToast(document.body.classList.contains('alt-light') ? 'نور کهربایی فعال شد.' : 'نور زمردی فعال شد.');
+  }
+
+  function toggleSound() {
+    soundOn = !soundOn;
+    renderStatus();
+    showToast(soundOn ? 'صدای حرکت روشن شد.' : 'صدای حرکت خاموش شد.');
+  }
+
   function tickClock() {
-    if (state.gameOver || state.pendingPromotion) return;
+    if (!state.gameStarted || document.body.classList.contains('menu-open') || state.gameOver || state.pendingPromotion) return;
     state.timers[state.turn] -= 1;
     if (state.timers[state.turn] <= 0) {
       state.timers[state.turn] = 0;
@@ -623,27 +704,29 @@
 
   function wireControls() {
     boardEl.addEventListener('click', handleSquareClick);
-    document.getElementById('undoButton').addEventListener('click', undoMove);
-    document.getElementById('mobileUndo').addEventListener('click', undoMove);
-    document.getElementById('newGameButton').addEventListener('click', newGame);
-    document.getElementById('mobileNewGame').addEventListener('click', newGame);
+    document.getElementById('startGameButton').addEventListener('click', startGame);
+    document.getElementById('mainGuideButton').addEventListener('click', () => {
+      const guide = document.getElementById('mainGuide');
+      guide.hidden = !guide.hidden;
+    });
+    document.getElementById('brandHome').addEventListener('click', event => { event.preventDefault(); openMainMenu(); });
+    menuToggle.addEventListener('click', () => gameMenu.classList.contains('is-open') ? closeGameMenu() : openGameMenu());
+    document.getElementById('menuClose').addEventListener('click', closeGameMenu);
+    menuScrim.addEventListener('click', closeGameMenu);
+
+    const closeAfter = action => () => { action(); closeGameMenu(); };
+    document.getElementById('menuUndo').addEventListener('click', closeAfter(undoMove));
+    document.getElementById('menuHint').addEventListener('click', closeAfter(giveHint));
+    document.getElementById('menuFlip').addEventListener('click', closeAfter(() => { if (state.gameStarted) { state.flipped = !state.flipped; renderStatus(); } }));
+    document.getElementById('menuFocus').addEventListener('click', closeAfter(() => { if (state.gameStarted) { state.focused = !state.focused; renderStatus(); } }));
+    document.getElementById('menuTheme').addEventListener('click', toggleTheme);
+    document.getElementById('menuSound').addEventListener('click', toggleSound);
+    document.getElementById('menuCopyPgn').addEventListener('click', copyPgn);
+    document.getElementById('menuNewGame').addEventListener('click', newGame);
+    document.getElementById('menuHome').addEventListener('click', openMainMenu);
+    document.getElementById('menuResign').addEventListener('click', resignGame);
     document.getElementById('modalNewGame').addEventListener('click', newGame);
-    document.getElementById('resignButton').addEventListener('click', resignGame);
-    document.getElementById('hintButton').addEventListener('click', giveHint);
-    document.getElementById('copyPgnButton').addEventListener('click', copyPgn);
-    const flip = () => { state.flipped = !state.flipped; renderStatus(); };
-    document.getElementById('flipButton').addEventListener('click', flip);
-    document.getElementById('mobileFlip').addEventListener('click', flip);
-    document.getElementById('focusButton').addEventListener('click', () => { state.focused = !state.focused; renderStatus(); });
-    document.getElementById('themeButton').addEventListener('click', () => {
-      document.body.classList.toggle('alt-light');
-      showToast(document.body.classList.contains('alt-light') ? 'نور کهربایی فعال شد.' : 'نور زمردی فعال شد.');
-    });
-    document.getElementById('soundButton').addEventListener('click', () => {
-      soundOn = !soundOn;
-      document.getElementById('soundButton').style.color = soundOn ? '' : '#61716a';
-      showToast(soundOn ? 'صدای حرکت روشن شد.' : 'صدای حرکت خاموش شد.');
-    });
+
     document.getElementById('closePromotion').addEventListener('click', () => {
       state.pendingPromotion = null;
       promotionModal.hidden = true;
@@ -662,12 +745,22 @@
         if (!promotionModal.hidden) {
           state.pendingPromotion = null;
           promotionModal.hidden = true;
+        } else if (gameMenu.classList.contains('is-open')) {
+          closeGameMenu();
         } else if (state.selected) {
-          state.selected = null; state.legalMoves = []; render();
+          state.selected = null;
+          state.legalMoves = [];
+          render();
         }
       }
-      if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey) flip();
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); undoMove(); }
+      if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && state.gameStarted) {
+        state.flipped = !state.flipped;
+        renderStatus();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        undoMove();
+      }
     });
   }
 
@@ -675,4 +768,5 @@
   wireControls();
   render();
   window.setInterval(tickClock, 1000);
+
 })();

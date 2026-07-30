@@ -11,165 +11,146 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="menu-open">
     <div class="noise"></div>
     <div class="aurora aurora-one"></div>
     <div class="aurora aurora-two"></div>
 
+    <section class="main-menu" id="mainMenu" aria-labelledby="mainMenuTitle">
+      <div class="menu-constellation constellation-one">✦</div>
+      <div class="menu-constellation constellation-two">✧</div>
+      <div class="menu-constellation constellation-three">✦</div>
+      <div class="menu-showcase" aria-hidden="true">
+        <div class="showcase-board"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span class="showcase-piece queen">♛</span>
+        <span class="showcase-piece king">♔</span>
+        <span class="showcase-piece knight">♞</span>
+        <span class="showcase-piece pawn">♙</span>
+      </div>
+      <div class="main-menu-card">
+        <div class="menu-brand" aria-label="شاه‌مات">
+          <span class="brand-mark"><i></i><i></i><i></i><i></i></span>
+          <span><strong>شاه‌مات</strong><small>THE ROYAL CHESS ATELIER</small></span>
+        </div>
+        <p class="menu-kicker">A GAME OF PATIENCE &amp; POWER</p>
+        <h1 id="mainMenuTitle">تاج‌وتخت، در <em>دستان تو</em></h1>
+        <p class="menu-description">یک دوئل کلاسیک روی یک دستگاه؛ با قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
+        <div class="menu-primary-actions">
+          <button class="menu-play-button" id="startGameButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع دوئل</b><small>دو بازیکن · یک دستگاه</small></span></button>
+          <button class="menu-how-button" id="mainGuideButton" type="button"><span>؟</span> راهنمای سریع</button>
+        </div>
+        <div class="main-guide" id="mainGuide" hidden>
+          <div><b>۱</b><span>یک مهره را انتخاب کنید.</span></div>
+          <div><b>۲</b><span>یکی از خانه‌های روشن را بزنید.</span></div>
+          <div><b>۳</b><span>نوبت به حریف می‌رسد.</span></div>
+        </div>
+        <div class="menu-footnote"><span></span> قلعه‌رفتن، آن‌پاسان و ارتقای پیاده فعال‌اند</div>
+      </div>
+    </section>
+
     <header class="topbar">
-      <a class="brand" href="#" aria-label="شروع دوباره شاه‌مات">
+      <a class="brand" id="brandHome" href="#" aria-label="بازگشت به منوی اصلی">
         <span class="brand-mark"><i></i><i></i><i></i><i></i></span>
-        <span>
-          <strong>شاه‌مات</strong>
-          <small>CHESS ATELIER</small>
-        </span>
+        <span><strong>شاه‌مات</strong><small>CHESS ATELIER</small></span>
       </a>
 
       <div class="game-status" aria-live="polite">
         <span class="status-dot"></span>
-        <span id="statusText">بازی دوستانه · نوبت سفید</span>
+        <span id="statusText">آماده‌ی شروع دوئل</span>
       </div>
 
-      <div class="top-actions">
-        <button class="icon-button" id="soundButton" type="button" aria-label="روشن یا خاموش کردن صدا" title="صدا">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4Zm12.2 2a4 4 0 0 0-2-3.46v6.92A4 4 0 0 0 16.2 12Zm0-7.2v2.16a6 6 0 0 1 0 10.08v2.16a8 8 0 0 0 0-14.4Z"/></svg>
-        </button>
-        <button class="icon-button" id="themeButton" type="button" aria-label="تغییر نور صحنه" title="نور صحنه">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2M5.64 5.64l1.42 1.42m9.88 9.88 1.42 1.42M3 12h2m14 0h2M5.64 18.36l1.42-1.42m9.88-9.88 1.42-1.42M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/></svg>
-        </button>
-        <button class="profile-button" type="button" aria-label="پروفایل بازیکن">م</button>
-      </div>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="باز کردن منوی بازی" aria-expanded="false" aria-controls="gameMenu">
+        <span></span><span></span><span></span>
+      </button>
     </header>
 
+    <div class="menu-scrim" id="menuScrim" aria-hidden="true"></div>
+    <aside class="game-menu" id="gameMenu" aria-label="منوی کنترل بازی" aria-hidden="true">
+      <div class="drawer-head">
+        <div><p class="eyebrow">GAME CONTROL</p><strong>فرماندهی دوئل</strong></div>
+        <button class="drawer-close" id="menuClose" type="button" aria-label="بستن منو">×</button>
+      </div>
+
+      <div class="drawer-score">
+        <div><span>سفید</span><b id="drawerWhiteClock">10:00</b></div>
+        <i>:</i>
+        <div><span>سیاه</span><b id="drawerBlackClock">10:00</b></div>
+      </div>
+
+      <nav class="drawer-actions" aria-label="فرمان‌های بازی">
+        <button id="menuUndo" type="button"><span class="drawer-icon">↶</span><span>بازگشت حرکت</span><small>Ctrl Z</small></button>
+        <button id="menuHint" type="button"><span class="drawer-icon">✦</span><span>راهنمای هوشمند</span><small>حرکت پیشنهادی</small></button>
+        <button id="menuFlip" type="button"><span class="drawer-icon">⟳</span><span>چرخاندن صفحه</span><small>F</small></button>
+        <button id="menuFocus" type="button"><span class="drawer-icon">□</span><span>حالت تمرکز</span><small id="focusLabel">خاموش</small></button>
+      </nav>
+
+      <details class="drawer-details" id="moveDetails">
+        <summary><span>دفتر حرکت‌ها</span><small id="lastMoveText">—</small></summary>
+        <div class="move-list" id="moveList" aria-live="polite"><div class="opening-note"><span>♟</span> بازی هنوز شروع نشده است</div></div>
+      </details>
+
+      <details class="drawer-details">
+        <summary><span>وضعیت و مهره‌ها</span><small>نمایش جزئیات</small></summary>
+        <div class="drawer-stats">
+          <div class="stat-row"><span>شاه سفید</span><b id="whiteKingStatus">امن</b></div>
+          <div class="stat-row"><span>شاه سیاه</span><b id="blackKingStatus">امن</b></div>
+          <div class="captured-row"><span>مهره‌های گرفته‌شده‌ی سفید</span><div class="captured-pieces" id="whiteCaptured"></div><small id="whiteCapturedValue">+0</small></div>
+          <div class="captured-row"><span>مهره‌های گرفته‌شده‌ی سیاه</span><div class="captured-pieces" id="blackCaptured"></div><small id="blackCapturedValue">+0</small></div>
+        </div>
+      </details>
+
+      <div class="drawer-utility">
+        <button id="menuSound" type="button"><span>◖</span><b>صدای حرکت</b><small id="soundLabel">روشن</small></button>
+        <button id="menuTheme" type="button"><span>☼</span><b>نور صحنه</b><small id="themeLabel">زمردی</small></button>
+        <button id="menuCopyPgn" type="button"><span>⧉</span><b>کپی PGN</b><small>حرکت‌ها</small></button>
+      </div>
+
+      <div class="drawer-bottom-actions">
+        <button class="drawer-new-game" id="menuNewGame" type="button">＋ بازی جدید</button>
+        <button class="drawer-home" id="menuHome" type="button">⌂ منوی اصلی</button>
+        <button class="drawer-resign" id="menuResign" type="button">تسلیم بازی</button>
+      </div>
+      <p class="drawer-coach" id="coachText">مرکز صفحه را با پیاده‌ها کنترل کنید.</p>
+    </aside>
+
     <main class="app-shell">
-      <aside class="side-panel game-panel">
-        <section class="player-card dark-player" id="blackCard">
-          <div class="player-row">
-            <div class="avatar opponent-avatar"><span></span></div>
-            <div class="player-details">
-              <strong>آرش سلیمانی</strong>
-              <small><span class="signal"></span> آماده‌ی نبرد</small>
-            </div>
-            <button class="more-button" type="button" aria-label="گزینه‌های بازیکن سیاه">•••</button>
-          </div>
-          <div class="rating-row"><span>امتیاز ELO</span><b>1,842</b><em>+12</em></div>
-          <div class="clock dark-clock" id="blackClock">10:00</div>
-        </section>
-
-        <section class="captured-section">
-          <div class="section-heading"><span>مهره‌های گرفته‌شده</span><small id="blackCapturedValue">+0</small></div>
-          <div class="captured-pieces black-captured" id="blackCaptured" aria-label="مهره‌های سفید گرفته‌شده"></div>
-        </section>
-
-        <section class="move-card">
-          <div class="section-heading"><span>دفتر بازی</span><button type="button" id="copyPgnButton">کپی PGN</button></div>
-          <div class="move-list" id="moveList" aria-live="polite">
-            <div class="opening-note"><span>♟</span> بازی هنوز شروع نشده است</div>
-          </div>
-        </section>
-      </aside>
-
       <section class="board-area" aria-label="صفحه شطرنج">
         <div class="board-heading">
-          <div>
-            <p class="eyebrow">THE ROYAL MATCH · 2026</p>
-            <h1>یک حرکت تا <em>جاودانگی</em></h1>
-          </div>
+          <div><p class="eyebrow">THE ROYAL MATCH · 2026</p><h2>یک حرکت تا <em>جاودانگی</em></h2></div>
           <div class="board-meta"><span id="moveCounter">حرکت ۰ از ۶۰</span><i></i><span id="orientationText">دید سفید</span></div>
         </div>
+
+        <section class="player-rail dark-rail" id="blackCard" aria-label="بازیکن سیاه">
+          <div class="avatar opponent-avatar"><span></span></div>
+          <div class="rail-details"><strong>آرش سلیمانی</strong><small><span class="signal"></span> بازیکن سیاه</small></div>
+          <div class="clock dark-clock" id="blackClock">10:00</div>
+        </section>
 
         <div class="board-stage">
           <div class="coordinate rank-coordinates" aria-hidden="true"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
           <div class="board-world">
-            <div class="board-shadow"></div>
-            <div class="board-rim rim-top"></div>
-            <div class="board-rim rim-bottom"></div>
-            <div class="board-rim rim-left"></div>
-            <div class="board-rim rim-right"></div>
+            <div class="board-shadow"></div><div class="board-rim rim-top"></div><div class="board-rim rim-bottom"></div><div class="board-rim rim-left"></div><div class="board-rim rim-right"></div>
             <div class="board" id="board" role="grid" aria-label="صفحه بازی شطرنج"></div>
           </div>
           <div class="coordinate file-coordinates" aria-hidden="true"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
         </div>
 
-        <div class="board-footer">
-          <div class="turn-guide"><span class="turn-piece">♙</span><span><b id="turnTitle">نوبت شماست</b><small id="turnHint">یک مهره‌ی سفید را انتخاب کنید</small></span></div>
-          <div class="view-controls">
-            <button type="button" id="undoButton" title="بازگشت یک حرکت" aria-label="بازگشت یک حرکت">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 7 4.5 12l5 5M5 12h9.5a5 5 0 1 1 0 10H13"/></svg>
-            </button>
-            <button type="button" id="flipButton" title="چرخاندن صفحه" aria-label="چرخاندن صفحه">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5A6.5 6.5 0 0 1 18 9l1.5-1.5V13h-5.5L16 11a4 4 0 1 0-1.2 4.8M16.5 16.5A6.5 6.5 0 0 1 6 15l-1.5 1.5V11H10l-2 2a4 4 0 1 0 1.2-4.8"/></svg>
-            </button>
-            <button type="button" id="focusButton" title="حالت تمرکز" aria-label="حالت تمرکز">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg>
-            </button>
-          </div>
-        </div>
-      </section>
+        <div class="board-footer"><div class="turn-guide"><span class="turn-piece">♙</span><span><b id="turnTitle">آماده‌ی شروع</b><small id="turnHint">برای آغاز، دکمه‌ی شروع دوئل را بزنید</small></span></div></div>
 
-      <aside class="side-panel control-panel">
-        <section class="match-card">
-          <div class="match-top"><span class="live-label"><i></i> زنده</span><span>بازی محلی</span></div>
-          <div class="match-title"><span class="mini-crown">♛</span><div><small>کلاسیک</small><strong>دوئل سلطنتی</strong></div></div>
-          <div class="match-settings">
-            <div><small>کنترل زمان</small><b>۱۰ دقیقه</b></div>
-            <div><small>افزایش زمان</small><b>بدون افزایش</b></div>
-          </div>
-        </section>
-
-        <section class="coach-card">
-          <div class="coach-icon">✦</div>
-          <div><span>راهنمای هوشمند</span><p id="coachText">مرکز صفحه را با پیاده‌ها کنترل کنید.</p></div>
-          <button type="button" id="hintButton" aria-label="نمایش راهنما">راهنما</button>
-        </section>
-
-        <section class="action-stack">
-          <button class="primary-action" id="newGameButton" type="button"><span>＋</span> بازی جدید</button>
-          <button class="secondary-action" id="resignButton" type="button"><span>⚑</span> پایان بازی</button>
-        </section>
-
-        <section class="rules-card">
-          <div class="section-heading"><span>نبض بازی</span><span class="pulse-line"></span></div>
-          <div class="stat-row"><span>وضعیت شاه سفید</span><b id="whiteKingStatus">امن</b></div>
-          <div class="stat-row"><span>وضعیت شاه سیاه</span><b id="blackKingStatus">امن</b></div>
-          <div class="stat-row"><span>آخرین حرکت</span><b id="lastMoveText">—</b></div>
-        </section>
-      </aside>
-
-      <section class="mobile-controls" aria-label="کنترل‌های بازی">
-        <button id="mobileUndo" type="button">↶ بازگشت</button>
-        <button id="mobileNewGame" type="button">＋ بازی جدید</button>
-        <button id="mobileFlip" type="button">⟳ چرخش</button>
-      </section>
-
-      <section class="player-card light-player bottom-player" id="whiteCard">
-        <div class="player-row">
+        <section class="player-rail light-rail" id="whiteCard" aria-label="بازیکن سفید">
           <div class="avatar user-avatar">م</div>
-          <div class="player-details"><strong>مریم</strong><small><span class="signal"></span> میزبان بازی</small></div>
-          <button class="more-button" type="button" aria-label="گزینه‌های بازیکن سفید">•••</button>
-        </div>
-        <div class="rating-row"><span>امتیاز ELO</span><b>1,617</b><em>+8</em></div>
-        <div class="clock light-clock" id="whiteClock">10:00</div>
+          <div class="rail-details"><strong>مریم</strong><small><span class="signal"></span> بازیکن سفید</small></div>
+          <div class="clock light-clock" id="whiteClock">10:00</div>
+        </section>
       </section>
     </main>
 
     <div class="promotion-modal" id="promotionModal" role="dialog" aria-modal="true" aria-labelledby="promotionTitle" hidden>
-      <div class="modal-card">
-        <button id="closePromotion" class="close-modal" type="button" aria-label="بستن">×</button>
-        <p class="eyebrow">THE CROWNING MOMENT</p>
-        <h2 id="promotionTitle">پیاده‌ات را به چه مهره‌ای تبدیل می‌کنی؟</h2>
-        <div class="promotion-choices" id="promotionChoices"></div>
-      </div>
+      <div class="modal-card"><button id="closePromotion" class="close-modal" type="button" aria-label="بستن">×</button><p class="eyebrow">THE CROWNING MOMENT</p><h2 id="promotionTitle">پیاده‌ات را به چه مهره‌ای تبدیل می‌کنی؟</h2><div class="promotion-choices" id="promotionChoices"></div></div>
     </div>
 
     <div class="endgame-modal" id="endgameModal" role="dialog" aria-modal="true" aria-labelledby="endgameTitle" hidden>
-      <div class="modal-card endgame-card">
-        <div class="endgame-seal">♚</div>
-        <p class="eyebrow">ROYAL RESULT</p>
-        <h2 id="endgameTitle">بازی به پایان رسید</h2>
-        <p id="endgameDescription">یک شروع تازه برای نبرد بعدی آماده است.</p>
-        <button class="primary-action" id="modalNewGame" type="button">شروع بازی تازه</button>
-      </div>
+      <div class="modal-card endgame-card"><div class="endgame-seal">♚</div><p class="eyebrow">ROYAL RESULT</p><h2 id="endgameTitle">بازی به پایان رسید</h2><p id="endgameDescription">یک شروع تازه برای نبرد بعدی آماده است.</p><button class="primary-action" id="modalNewGame" type="button">شروع بازی تازه</button></div>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
