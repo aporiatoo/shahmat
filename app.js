@@ -331,6 +331,9 @@
     threeBoard.materials.darkAccent.color.set(amber ? 0x1d100e : 0x0c2723);
     threeBoard.materials.lightTile.color.set(amber ? 0xcdb699 : 0xd8c19a);
     threeBoard.materials.darkTile.color.set(amber ? 0x704c3c : 0x46675b);
+    threeBoard.materials.wood.color.set(amber ? 0x5e331e : 0x5a351d);
+    threeBoard.materials.woodEdge.color.set(amber ? 0x24130f : 0x1f1712);
+    threeBoard.materials.frameInlay.color.set(amber ? 0xe4a650 : 0xd7ac65);
   }
 
   function createLatheModel(THREE, profile, material) {
@@ -507,6 +510,99 @@
     return group;
   }
 
+  function makeSquareMarker(THREE, root, x, z, kind, materials, y = .10) {
+    let marker;
+    if (kind === 'legal') {
+      marker = new THREE.Mesh(new THREE.CylinderGeometry(.115, .115, .025, 28), materials.legal);
+    } else if (kind === 'capture') {
+      marker = new THREE.Mesh(new THREE.TorusGeometry(.38, .038, 10, 36), materials.capture);
+      marker.rotation.x = Math.PI / 2;
+    } else if (kind === 'check') {
+      marker = new THREE.Mesh(new THREE.TorusGeometry(.42, .047, 12, 40), materials.check);
+      marker.rotation.x = Math.PI / 2;
+    } else if (kind === 'hint') {
+      marker = new THREE.Mesh(new THREE.OctahedronGeometry(.12, 1), materials.hint);
+      y += .11;
+    } else {
+      marker = new THREE.Mesh(new THREE.BoxGeometry(.88, .028, .88), materials[kind]);
+    }
+    marker.position.set(x, y, z);
+    marker.userData.markerKind = kind;
+    marker.castShadow = false;
+    marker.receiveShadow = false;
+    root.add(marker);
+    return marker;
+  }
+
+  function updateThreeCamera() {
+    if (!threeBoard) return;
+    const { camera, target } = threeBoard;
+    const direction = state.flipped ? -1 : 1;
+    const zoom = state.focused ? .84 : 1;
+    camera.position.set(7.9 * direction * zoom, 10.9 * zoom, 9.7 * direction * zoom);
+    camera.fov = state.focused ? 40 : 46;
+    camera.lookAt(target);
+    camera.updateProjectionMatrix();
+  }
+
+  function buildThreeBoardScenery(THREE, scene, materials) {
+    const scenery = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(9.34, .34, 9.34), materials.woodEdge);
+    base.position.y = -.30;
+    base.receiveShadow = true;
+    scenery.add(base);
+    const innerBase = new THREE.Mesh(new THREE.BoxGeometry(8.82, .13, 8.82), materials.wood);
+    innerBase.position.y = -.075;
+    innerBase.receiveShadow = true;
+    scenery.add(innerBase);
+
+    const railMaterial = materials.wood;
+    const railEdge = materials.frameInlay;
+    const rails = [
+      { size: [9.05, .25, .43], pos: [0, -.005, -4.32] },
+      { size: [9.05, .25, .43], pos: [0, -.005, 4.32] },
+      { size: [.43, .25, 8.2], pos: [-4.32, -.005, 0] },
+      { size: [.43, .25, 8.2], pos: [4.32, -.005, 0] }
+    ];
+    rails.forEach(({ size, pos }) => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(...size), railMaterial);
+      rail.position.set(...pos);
+      rail.castShadow = true;
+      rail.receiveShadow = true;
+      scenery.add(rail);
+    });
+    const trim = [
+      { size: [8.48, .04, .035], pos: [0, .14, -4.08] },
+      { size: [8.48, .04, .035], pos: [0, .14, 4.08] },
+      { size: [.035, .04, 7.65], pos: [-4.08, .14, 0] },
+      { size: [.035, .04, 7.65], pos: [4.08, .14, 0] }
+    ];
+    trim.forEach(({ size, pos }) => {
+      const line = new THREE.Mesh(new THREE.BoxGeometry(...size), railEdge);
+      line.position.set(...pos);
+      scenery.add(line);
+    });
+    for (const x of [-4.33, 4.33]) for (const z of [-4.33, 4.33]) {
+      const corner = new THREE.Mesh(new THREE.CylinderGeometry(.17, .20, .13, 24), materials.frameInlay);
+      corner.position.set(x, .14, z);
+      corner.castShadow = true;
+      scenery.add(corner);
+    }
+    scene.add(scenery);
+
+    const tiles = new THREE.Group();
+    const tileGeometry = new THREE.BoxGeometry(.975, .14, .975);
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const tile = new THREE.Mesh(tileGeometry, (row + col) % 2 ? materials.darkTile : materials.lightTile);
+        tile.position.set(col - 3.5, .02, row - 3.5);
+        tile.receiveShadow = true;
+        tiles.add(tile);
+      }
+    }
+    scene.add(tiles);
+  }
+
   function initThreeBoard() {
     if (!window.THREE) return;
     const THREE = window.THREE;
@@ -518,85 +614,167 @@
       renderer.setClearColor(0x000000, 0);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
 
       const scene = new THREE.Scene();
-      const camera = new THREE.OrthographicCamera(-4, 4, 4, -4, .1, 30);
-      camera.position.set(0, 11, 0);
-      camera.up.set(0, 0, -1);
-      camera.lookAt(0, 0, 0);
-      scene.add(new THREE.HemisphereLight(0xd7fff1, 0x13231e, 1.65));
-      const key = new THREE.DirectionalLight(0xffe0a0, 2.8);
-      key.position.set(-4, 8, 5);
-      key.castShadow = true;
-      key.shadow.mapSize.set(1024, 1024);
-      key.shadow.camera.left = -6;
-      key.shadow.camera.right = 6;
-      key.shadow.camera.top = 6;
-      key.shadow.camera.bottom = -6;
-      scene.add(key);
-      const rim = new THREE.DirectionalLight(0x4fd6b4, 1.15);
-      rim.position.set(5, 4, -4);
-      scene.add(rim);
-
+      const camera = new THREE.PerspectiveCamera(42, 1, .1, 35);
+      const target = new THREE.Vector3(0, .28, 0);
       const materials = {
-        light: new THREE.MeshPhysicalMaterial({ color: 0xf1ecdd, roughness: .23, metalness: .12, clearcoat: .72, clearcoatRoughness: .16 }),
-        lightAccent: new THREE.MeshStandardMaterial({ color: 0xb7aa91, roughness: .3, metalness: .43 }),
-        dark: new THREE.MeshPhysicalMaterial({ color: 0x1c4039, roughness: .2, metalness: .64, clearcoat: .58, clearcoatRoughness: .14 }),
-        darkAccent: new THREE.MeshStandardMaterial({ color: 0x0c2723, roughness: .28, metalness: .72 }),
-        lightTile: new THREE.MeshStandardMaterial({ color: 0xd8c19a, roughness: .68, metalness: .04 }),
-        darkTile: new THREE.MeshStandardMaterial({ color: 0x46675b, roughness: .56, metalness: .11 })
+        light: new THREE.MeshPhysicalMaterial({ color: 0xf1ecdd, roughness: .20, metalness: .15, clearcoat: .78, clearcoatRoughness: .13 }),
+        lightAccent: new THREE.MeshStandardMaterial({ color: 0xb7aa91, roughness: .27, metalness: .48 }),
+        dark: new THREE.MeshPhysicalMaterial({ color: 0x1c4039, roughness: .18, metalness: .68, clearcoat: .62, clearcoatRoughness: .12 }),
+        darkAccent: new THREE.MeshStandardMaterial({ color: 0x0c2723, roughness: .24, metalness: .75 }),
+        inlay: new THREE.MeshPhysicalMaterial({ color: 0xd5a851, roughness: .16, metalness: .9, clearcoat: .45 }),
+        darkInlay: new THREE.MeshPhysicalMaterial({ color: 0x5eb69e, roughness: .16, metalness: .86, clearcoat: .4 }),
+        lightTile: new THREE.MeshStandardMaterial({ color: 0xd8c19a, roughness: .66, metalness: .04 }),
+        darkTile: new THREE.MeshStandardMaterial({ color: 0x46675b, roughness: .52, metalness: .12 }),
+        wood: new THREE.MeshPhysicalMaterial({ color: 0x5a351d, roughness: .34, metalness: .06, clearcoat: .26 }),
+        woodEdge: new THREE.MeshStandardMaterial({ color: 0x1f1712, roughness: .42, metalness: .18 }),
+        frameInlay: new THREE.MeshPhysicalMaterial({ color: 0xd7ac65, roughness: .16, metalness: .82, clearcoat: .36 }),
+        selected: new THREE.MeshBasicMaterial({ color: 0xffd16b, transparent: true, opacity: .43, depthWrite: false }),
+        last: new THREE.MeshBasicMaterial({ color: 0xe8aa46, transparent: true, opacity: .26, depthWrite: false }),
+        legal: new THREE.MeshBasicMaterial({ color: 0x54d2ae, transparent: true, opacity: .8, depthWrite: false }),
+        capture: new THREE.MeshBasicMaterial({ color: 0xf17a67, transparent: true, opacity: .86, depthWrite: false }),
+        check: new THREE.MeshBasicMaterial({ color: 0xff5149, transparent: true, opacity: .9, depthWrite: false }),
+        hint: new THREE.MeshBasicMaterial({ color: 0xffd773, transparent: true, opacity: .95, depthWrite: false })
       };
-      const tiles = new THREE.Group();
-      const tileGeometry = new THREE.BoxGeometry(.985, .13, .985);
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-          const tile = new THREE.Mesh(tileGeometry, (row + col) % 2 ? materials.darkTile : materials.lightTile);
-          tile.position.set(col - 3.5, -.07, row - 3.5);
-          tile.receiveShadow = true;
-          tiles.add(tile);
-        }
-      }
-      scene.add(tiles);
+
+      scene.add(new THREE.HemisphereLight(0xc6fff2, 0x100d0b, 1.8));
+      const key = new THREE.DirectionalLight(0xffdf9f, 3.4);
+      key.position.set(-6, 11, 6);
+      key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048);
+      key.shadow.camera.left = -7;
+      key.shadow.camera.right = 7;
+      key.shadow.camera.top = 7;
+      key.shadow.camera.bottom = -7;
+      key.shadow.bias = -.00035;
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0x43d6b0, 1.75);
+      rim.position.set(6, 6, -7);
+      scene.add(rim);
+      const warmFill = new THREE.PointLight(0xc58a47, 1.15, 16, 2);
+      warmFill.position.set(-3, 4, -4);
+      scene.add(warmFill);
+
+      buildThreeBoardScenery(THREE, scene, materials);
       const pieceRoot = new THREE.Group();
-      scene.add(pieceRoot);
+      const indicatorRoot = new THREE.Group();
+      scene.add(pieceRoot, indicatorRoot);
       const templates = {};
       ['w', 'b'].forEach(color => ['p', 'n', 'b', 'r', 'q', 'k'].forEach(type => {
         templates[`${color}${type}`] = createThreePiece(type, color, THREE, materials);
       }));
-      threeBoard = { THREE, canvas, renderer, scene, camera, materials, pieceRoot, templates };
+
+      threeBoard = { THREE, canvas, renderer, scene, camera, target, materials, pieceRoot, indicatorRoot, templates, raycaster: new THREE.Raycaster(), pointer: new THREE.Vector2(), animationTime: 0 };
       configureThreeColors();
       boardEl.classList.add('three-ready');
+      boardStage.classList.add('three-stage');
+      canvas.addEventListener('click', handleThreeCanvasClick);
+      canvas.addEventListener('pointermove', handleThreeCanvasHover, { passive: true });
+      canvas.addEventListener('webglcontextlost', handleWebGLContextLost, false);
       window.addEventListener('resize', () => { if (threeBoard) syncThreeBoard(); }, { passive: true });
+      updateThreeCamera();
+      animateThreeBoard();
     } catch (error) {
       console.warn('3D renderer could not start; using the illustrated pieces instead.', error);
       threeBoard = null;
       boardEl.classList.remove('three-ready');
+      boardStage.classList.remove('three-stage');
     }
+  }
+
+  function handleWebGLContextLost(event) {
+    event.preventDefault();
+    if (threeBoard?.animationFrame) window.cancelAnimationFrame(threeBoard.animationFrame);
+    threeBoard = null;
+    boardEl.classList.remove('three-ready');
+    boardStage.classList.remove('three-stage');
+    render();
+    showToast('حالت سه‌بعدی در دسترس نیست؛ نسخه‌ی گرافیکی جایگزین فعال شد.');
+  }
+
+  function resolveThreeSquare(event) {
+    if (!threeBoard) return null;
+    const { canvas, camera, raycaster, pointer, THREE } = threeBoard;
+    const bounds = canvas.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return null;
+    pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
+    pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const target = new THREE.Vector3();
+    const hit = raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -.10), target);
+    if (!hit || target.x < -4 || target.x > 4 || target.z < -4 || target.z > 4) return null;
+    return { y: Math.min(7, Math.max(0, Math.floor(target.z + 4))), x: Math.min(7, Math.max(0, Math.floor(target.x + 4))) };
+  }
+
+  function handleThreeCanvasClick(event) {
+    const square = resolveThreeSquare(event);
+    if (square) handleSquareTarget(square);
+  }
+
+  function handleThreeCanvasHover(event) {
+    const square = resolveThreeSquare(event);
+    threeBoard.canvas.style.cursor = square && state.gameStarted && !state.gameOver ? 'pointer' : 'default';
+  }
+
+  function animateThreeBoard(timestamp = 0) {
+    if (!threeBoard) return;
+    const { renderer, scene, camera, indicatorRoot } = threeBoard;
+    const time = timestamp * .001;
+    indicatorRoot.children.forEach(marker => {
+      const kind = marker.userData.markerKind;
+      if (kind === 'legal' || kind === 'hint' || kind === 'check') {
+        const pulse = 1 + Math.sin(time * 3.2 + marker.position.x) * .11;
+        marker.scale.setScalar(pulse);
+      }
+      if (kind === 'hint') marker.rotation.y += .025;
+    });
+    renderer.render(scene, camera);
+    threeBoard.animationFrame = window.requestAnimationFrame(animateThreeBoard);
   }
 
   function syncThreeBoard() {
     if (!threeBoard) return;
-    const { renderer, canvas, camera, scene, pieceRoot, templates } = threeBoard;
+    const { renderer, canvas, camera, scene, pieceRoot, indicatorRoot, templates, materials, THREE } = threeBoard;
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
     if (!width || !height) return;
     renderer.setSize(width, height, false);
-    camera.left = -4;
-    camera.right = 4;
-    camera.top = 4;
-    camera.bottom = -4;
-    camera.updateProjectionMatrix();
+    camera.aspect = width / height;
     configureThreeColors();
+    updateThreeCamera();
     pieceRoot.clear();
+    indicatorRoot.clear();
+
+    if (state.lastMove) {
+      makeSquareMarker(THREE, indicatorRoot, state.lastMove.from.x - 3.5, state.lastMove.from.y - 3.5, 'last', materials, .105);
+      makeSquareMarker(THREE, indicatorRoot, state.lastMove.to.x - 3.5, state.lastMove.to.y - 3.5, 'last', materials, .106);
+    }
+    if (state.selected) makeSquareMarker(THREE, indicatorRoot, state.selected.x - 3.5, state.selected.y - 3.5, 'selected', materials, .12);
+    state.legalMoves.forEach(move => {
+      const occupied = state.board[move.y][move.x] || move.special === 'en-passant';
+      makeSquareMarker(THREE, indicatorRoot, move.x - 3.5, move.y - 3.5, occupied ? 'capture' : 'legal', materials, .145);
+    });
+    if (state.hint) {
+      makeSquareMarker(THREE, indicatorRoot, state.hint.from.x - 3.5, state.hint.from.y - 3.5, 'hint', materials, .19);
+      makeSquareMarker(THREE, indicatorRoot, state.hint.to.x - 3.5, state.hint.to.y - 3.5, 'hint', materials, .21);
+    }
+
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
         const piece = state.board[row][col];
         if (!piece) continue;
         const model = templates[`${piece.color}${piece.type}`].clone(true);
-        model.position.set(col - 3.5, 0, row - 3.5);
+        model.position.set(col - 3.5, .10, row - 3.5);
         model.rotation.y = piece.color === 'b' ? Math.PI : 0;
+        if (state.lastMove && state.lastMove.to.x === col && state.lastMove.to.y === row) model.position.y += .055;
         pieceRoot.add(model);
+        if (piece.type === 'k' && isKingInCheck(piece.color)) {
+          makeSquareMarker(THREE, indicatorRoot, col - 3.5, row - 3.5, 'check', materials, .17);
+        }
       }
     }
     renderer.render(scene, camera);
@@ -636,7 +814,7 @@
         }
         if (piece?.type === 'k' && ((piece.color === 'w' && checkedWhite) || (piece.color === 'b' && checkedBlack))) square.classList.add('in-check');
         if (state.hint && (sameSquare(state.hint.from, { y, x }) || sameSquare(state.hint.to, { y, x }))) square.classList.add('hinted');
-        if (piece) {
+        if (piece && !threeBoard) {
           const model = document.createElement('div');
           model.className = `piece ${piece.color} ${piece.type}${state.lastMove && sameSquare(state.lastMove.to, { y, x }) ? ' moving' : ''}`;
           model.innerHTML = pieceSvg(piece, `${y}${x}`);
@@ -811,10 +989,8 @@
     completeMove(from, move);
   }
 
-  function handleSquareClick(event) {
-    const square = event.target.closest('.square');
-    if (!square || !state.gameStarted || state.gameOver || state.pendingPromotion) return;
-    const target = { y: Number(square.dataset.y), x: Number(square.dataset.x) };
+  function handleSquareTarget(target) {
+    if (!target || !state.gameStarted || state.gameOver || state.pendingPromotion) return;
     const selectedMove = state.legalMoves.find(move => move.y === target.y && move.x === target.x);
     if (state.selected && selectedMove) {
       beginMove(state.selected, selectedMove);
@@ -834,6 +1010,12 @@
       state.legalMoves = [];
       render();
     } else if (piece) showToast(`نوبت مهره‌های ${state.turn === 'w' ? 'سفید' : 'سیاه'} است.`);
+  }
+
+  function handleSquareClick(event) {
+    const square = event.target.closest('.square');
+    if (!square) return;
+    handleSquareTarget({ y: Number(square.dataset.y), x: Number(square.dataset.x) });
   }
 
   function undoMove() {
