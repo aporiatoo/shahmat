@@ -417,11 +417,11 @@
   }
 
   const STORY_CHARACTERS = {
-    lian: { name: 'لیان، دیده‌بان زمرد', title: 'تاکتیک‌دان مرکز', style: 'tactical', environment: 'emerald', quote: 'مرکز صفحه، قلب هر پادشاهی است.' },
-    sahar: { name: 'سحر، حافظه‌ی کتابخانه', title: 'استاد افتتاحیه', style: 'positional', environment: 'library', quote: 'هر حرکت خوب، سایه‌ای از حرکت پیشین دارد.' },
-    azar: { name: 'آذر، بانوی مرمر', title: 'مهاجم روشن', style: 'aggressive', environment: 'marble', quote: 'گاهی بهترین دفاع، حمله‌ای بی‌پرواست.' },
-    vared: { name: 'وارد، سپر آبسیدین', title: 'مدافع قلعه', style: 'defensive', environment: 'obsidian', quote: 'هیچ دیواری بدون صبر فرو نمی‌ریزد.' },
-    shahbanou: { name: 'شهبانو، نگهبان تالار ایرانی', title: 'باس نهایی', style: 'tactical', environment: 'persian', quote: 'تاج را کسی می‌برد که در سکوت هم نقشه می‌کشد.' }
+    lian: { name: 'لیان، دیده‌بان زمرد', title: 'تاکتیک‌دان مرکز', style: 'tactical', environment: 'emerald', image: 'assets/story/lian-emerald.png', quote: 'مرکز صفحه، قلب هر پادشاهی است.' },
+    sahar: { name: 'سحر، حافظه‌ی کتابخانه', title: 'استاد افتتاحیه', style: 'positional', environment: 'library', image: 'assets/story/sahar-library.png', quote: 'هر حرکت خوب، سایه‌ای از حرکت پیشین دارد.' },
+    azar: { name: 'آذر، بانوی مرمر', title: 'مهاجم روشن', style: 'aggressive', environment: 'marble', image: 'assets/story/azar-marble.png', quote: 'گاهی بهترین دفاع، حمله‌ای بی‌پرواست.' },
+    vared: { name: 'وارد، سپر آبسیدین', title: 'مدافع قلعه', style: 'defensive', environment: 'obsidian', image: 'assets/story/vared-obsidian.png', quote: 'هیچ دیواری بدون صبر فرو نمی‌ریزد.' },
+    shahbanou: { name: 'شهبانو، نگهبان تالار ایرانی', title: 'باس نهایی', style: 'tactical', environment: 'persian', image: 'assets/story/shahbanou-persian.png', quote: 'تاج را کسی می‌برد که در سکوت هم نقشه می‌کشد.' }
   };
 
   const STORY_CHAPTERS = [
@@ -474,7 +474,8 @@
     list.innerHTML = STORY_CHAPTERS.map(chapter => {
       const unlocked = chapter.id <= progress.unlocked;
       const done = progress.completed.includes(chapter.id);
-      return `<article class="chapter-card ${unlocked ? '' : 'locked'}"><span class="chapter-number">${chapter.id}</span><span><b>${chapter.title}${done ? ' · ✓' : ''}</b><small>${STORY_CHARACTERS[chapter.character].name} · ${STORY_CHARACTERS[chapter.character].title}</small></span><button type="button" data-story-chapter="${chapter.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? (done ? 'دوباره' : 'شروع') : 'قفل'}</button></article>`;
+      const hero = STORY_CHARACTERS[chapter.character];
+      return `<article class="chapter-card ${unlocked ? '' : 'locked'}"><img class="chapter-art" src="${hero.image || ''}" alt="${hero.name}"><span><b>${chapter.title}${done ? ' · ✓' : ''}</b><small>${hero.name} · ${hero.title}</small></span><button type="button" data-story-chapter="${chapter.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? (done ? 'دوباره' : 'شروع') : 'قفل'}</button></article>`;
     }).join('');
     list.querySelectorAll('[data-story-chapter]').forEach(button => button.addEventListener('click', () => startStoryChapter(Number(button.dataset.storyChapter))));
   }
@@ -537,7 +538,9 @@
     document.getElementById('storyEyebrow').textContent = `CHAPTER ${chapter.id} · ${chapter.title.toUpperCase()}`;
     document.getElementById('storyTitle').textContent = chapter.title;
     document.getElementById('storyCopy').textContent = line.text;
-    document.getElementById('storyCharacter').innerHTML = `<div><b>${line.speaker === 'راوی' ? character.name : line.speaker}</b><small>${character.title} · «${character.quote}»</small></div>`;
+    document.getElementById('storyCharacter').innerHTML = `<img src="${character.image || ''}" alt="پرتره ${character.name}"><div><b>${line.speaker === 'راوی' ? character.name : line.speaker}</b><small>${character.title} · «${character.quote}»</small></div>`;
+    const rosterIds = ['lian', 'vared', 'azar'];
+    document.getElementById('storyRoster').innerHTML = rosterIds.map(id => { const hero = STORY_CHARACTERS[id]; return `<span><img src="${hero.image}" alt="${hero.name}"><b>${hero.name.split('،')[0]}</b><small>${hero.title}</small></span>`; }).join('');
     document.getElementById('storyBranch').textContent = state.storyDialogue.phase === 'result' ? 'نتیجه‌ی این نبرد، مسیر فصل بعد را شکل می‌دهد.' : `گفت‌وگو ${index + 1} از ${lines.length}`;
     choices.innerHTML = '';
     const lastLine = index === lines.length - 1;
