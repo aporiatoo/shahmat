@@ -38,6 +38,11 @@
         <p class="menu-kicker">A GAME OF PATIENCE &amp; POWER</p>
         <h1 id="mainMenuTitle">تاج‌وتخت، در <em>دستان تو</em></h1>
         <p class="menu-description">به میدان نبرد با استاد هوشمند وارد شوید؛ قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
+        <section class="launch-settings" aria-label="تنظیمات نبرد">
+          <label><span>درجه‌ی استاد</span><select id="difficultySelect"><option value="easy">آموزشی</option><option value="normal" selected>تاکتیکی</option><option value="hard">استاد</option></select></label>
+          <label><span>کنترل زمان</span><select id="timeControlSelect"><option value="none">بدون ساعت</option><option value="blitz3">۳ دقیقه</option><option value="blitz5">۵ دقیقه</option><option value="rapid10" selected>۱۰ دقیقه</option><option value="rapid15">۱۵ + ۱۰</option></select></label>
+          <label><span>کیفیت صحنه</span><select id="qualitySelect"><option value="eco">اقتصادی</option><option value="balanced" selected>متعادل</option><option value="cinematic">سینمایی</option></select></label>
+        </section>
         <div class="color-choice" aria-label="انتخاب رنگ مهره‌های بازیکن">
           <span>رنگ مهره‌های شما</span>
           <div>
@@ -55,6 +60,7 @@
           <div><b>۳</b><span>نوبت به حریف می‌رسد.</span></div>
         </div>
         <div class="menu-footnote"><span></span> قلعه‌رفتن، آن‌پاسان و ارتقای پیاده فعال‌اند</div>
+        <div class="career-strip" aria-label="آمار شخصی"><span><b id="careerWins">۰</b> برد</span><span><b id="careerLosses">۰</b> باخت</span><span><b id="careerDraws">۰</b> مساوی</span></div>
       </div>
     </section>
 
@@ -168,7 +174,7 @@
     </div>
 
     <div class="endgame-modal" id="endgameModal" role="dialog" aria-modal="true" aria-labelledby="endgameTitle" hidden>
-      <div class="modal-card endgame-card"><div class="endgame-seal">♚</div><p class="eyebrow">ROYAL RESULT</p><h2 id="endgameTitle">بازی به پایان رسید</h2><p id="endgameDescription">یک شروع تازه برای نبرد بعدی آماده است.</p><button class="primary-action" id="modalNewGame" type="button">شروع بازی تازه</button></div>
+        <div class="modal-card endgame-card"><div class="endgame-seal">♚</div><p class="eyebrow">ROYAL RESULT</p><h2 id="endgameTitle">بازی به پایان رسید</h2><p id="endgameDescription">یک شروع تازه برای نبرد بعدی آماده است.</p><div class="endgame-insights" id="endgameInsights"></div><button class="primary-action" id="modalNewGame" type="button">شروع بازی تازه</button></div>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

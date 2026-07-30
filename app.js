@@ -64,6 +64,11 @@
       enPassant: null,
       capturedBy: { w: [], b: [] },
       timers: { w: 600, b: 600 },
+      timeControl: 'rapid10',
+      initialTime: 600,
+      increment: 0,
+      difficulty: 'normal',
+      graphicsQuality: 'balanced',
       halfmoveClock: 0,
       fullmoveNumber: 1,
       positionHistory: [],
@@ -75,6 +80,7 @@
       botThinking: false,
       resumable: false,
       autoSave: true,
+      resultRecorded: false,
       gameOver: false,
       gameStarted: false,
       result: '',
@@ -105,6 +111,11 @@
       enPassant: clonePlain(state.enPassant),
       capturedBy: { w: clonePlain(state.capturedBy.w), b: clonePlain(state.capturedBy.b) },
       timers: { ...state.timers },
+      timeControl: state.timeControl,
+      initialTime: state.initialTime,
+      increment: state.increment,
+      difficulty: state.difficulty,
+      graphicsQuality: state.graphicsQuality,
       halfmoveClock: state.halfmoveClock,
       fullmoveNumber: state.fullmoveNumber,
       positionHistory: clonePlain(state.positionHistory),
@@ -116,6 +127,7 @@
       botThinking: state.botThinking,
       resumable: state.resumable,
       autoSave: state.autoSave,
+      resultRecorded: state.resultRecorded,
       gameOver: state.gameOver,
       gameStarted: state.gameStarted,
       result: state.result,
@@ -132,6 +144,11 @@
     state.enPassant = clonePlain(snapshot.enPassant);
     state.capturedBy = { w: clonePlain(snapshot.capturedBy.w), b: clonePlain(snapshot.capturedBy.b) };
     state.timers = { ...snapshot.timers };
+    state.timeControl = snapshot.timeControl || 'rapid10';
+    state.initialTime = Number(snapshot.initialTime) || 600;
+    state.increment = Number(snapshot.increment) || 0;
+    state.difficulty = ['easy', 'normal', 'hard'].includes(snapshot.difficulty) ? snapshot.difficulty : 'normal';
+    state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(snapshot.graphicsQuality) ? snapshot.graphicsQuality : 'balanced';
     state.halfmoveClock = snapshot.halfmoveClock ?? 0;
     state.fullmoveNumber = snapshot.fullmoveNumber ?? 1;
     state.positionHistory = clonePlain(snapshot.positionHistory) || [positionKey()];
@@ -143,6 +160,7 @@
     state.botThinking = false;
     state.resumable = Boolean(snapshot.resumable);
     state.autoSave = snapshot.autoSave !== false;
+    state.resultRecorded = Boolean(snapshot.resultRecorded);
     state.gameOver = snapshot.gameOver;
     state.gameStarted = snapshot.gameStarted;
     state.result = snapshot.result;
@@ -239,6 +257,36 @@
     state.result = '';
     state.resultDescription = '';
     state.resumable = false;
+  }
+
+  const TIME_CONTROLS = {
+    none: { initial: null, increment: 0, label: 'بدون ساعت' },
+    blitz3: { initial: 180, increment: 0, label: '۳ دقیقه' },
+    blitz5: { initial: 300, increment: 0, label: '۵ دقیقه' },
+    rapid10: { initial: 600, increment: 0, label: '۱۰ دقیقه' },
+    rapid15: { initial: 900, increment: 10, label: '۱۵ + ۱۰' }
+  };
+
+  function setTimeControl(control) {
+    const setting = TIME_CONTROLS[control] || TIME_CONTROLS.rapid10;
+    state.timeControl = TIME_CONTROLS[control] ? control : 'rapid10';
+    state.initialTime = setting.initial || 0;
+    state.increment = setting.increment;
+    if (!state.gameStarted || !state.moves.length || state.colorSelectionChanged) {
+      state.timers = { w: setting.initial || 0, b: setting.initial || 0 };
+    }
+    updateLaunchSettingsUI();
+  }
+
+  function setDifficulty(level) {
+    state.difficulty = ['easy', 'normal', 'hard'].includes(level) ? level : 'normal';
+    updateLaunchSettingsUI();
+  }
+
+  function setGraphicsQuality(quality) {
+    state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(quality) ? quality : 'balanced';
+    applyGraphicsQuality();
+    updateLaunchSettingsUI();
   }
 
   function hasInsufficientMaterial() {
@@ -465,6 +513,17 @@
     threeBoard.materials.wood.color.set(amber ? 0x5e331e : 0x5a351d);
     threeBoard.materials.woodEdge.color.set(amber ? 0x24130f : 0x1f1712);
     threeBoard.materials.frameInlay.color.set(amber ? 0xe4a650 : 0xd7ac65);
+  }
+
+  function applyGraphicsQuality() {
+    if (!threeBoard) return;
+    const quality = state.graphicsQuality;
+    const pixelRatio = quality === 'eco' ? 1 : Math.min(window.devicePixelRatio || 1, quality === 'cinematic' ? 2 : 1.5);
+    threeBoard.renderer.setPixelRatio(pixelRatio);
+    threeBoard.renderer.shadowMap.enabled = quality !== 'eco';
+    threeBoard.keyLight.shadow.mapSize.set(quality === 'cinematic' ? 2048 : 1024, quality === 'cinematic' ? 2048 : 1024);
+    threeBoard.frameStride = quality === 'eco' ? 2 : 1;
+    syncThreeBoard();
   }
 
   function createLatheModel(THREE, profile, material) {
@@ -809,8 +868,9 @@
         templates[`${color}${type}`] = createThreePiece(type, color, THREE, materials);
       }));
 
-      threeBoard = { THREE, canvas, renderer, scene, camera, target, desiredCamera: new THREE.Vector3(), desiredTarget: new THREE.Vector3(), cameraReady: false, materials, pieceRoot, indicatorRoot, templates, raycaster: new THREE.Raycaster(), pointer: new THREE.Vector2(), animationTime: 0 };
+      threeBoard = { THREE, canvas, renderer, scene, camera, target, desiredCamera: new THREE.Vector3(), desiredTarget: new THREE.Vector3(), cameraReady: false, materials, pieceRoot, indicatorRoot, templates, keyLight: key, raycaster: new THREE.Raycaster(), pointer: new THREE.Vector2(), animationTime: 0, frameStride: 1, frameCount: 0 };
       configureThreeColors();
+      applyGraphicsQuality();
       boardEl.classList.add('three-ready');
       boardStage.classList.add('three-stage');
       canvas.addEventListener('click', handleThreeCanvasClick);
@@ -914,7 +974,8 @@
       }
       if (kind === 'hint') marker.rotation.y += .025;
     });
-    renderer.render(scene, camera);
+    threeBoard.frameCount++;
+    if (threeBoard.frameCount % threeBoard.frameStride === 0) renderer.render(scene, camera);
     threeBoard.animationFrame = window.requestAnimationFrame(animateThreeBoard);
   }
 
@@ -1034,6 +1095,7 @@
   }
 
   function timeString(total) {
+    if (state.timeControl === 'none') return '∞';
     const minutes = Math.max(0, Math.floor(total / 60));
     const seconds = Math.max(0, total % 60);
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -1129,12 +1191,71 @@
     return `${prefix}${capture ? 'x' : ''}${squareName(move.y, move.x)}${promotion ? `=${notationPieces[promotion]}` : ''}${suffix}`;
   }
 
+  const CAREER_KEY = 'shahmat-career-v1';
+
+  function readCareerStats() {
+    if (typeof localStorage === 'undefined') return { wins: 0, losses: 0, draws: 0, streak: 0, history: [] };
+    try {
+      const saved = JSON.parse(localStorage.getItem(CAREER_KEY));
+      return {
+        wins: Number(saved?.wins) || 0,
+        losses: Number(saved?.losses) || 0,
+        draws: Number(saved?.draws) || 0,
+        streak: Number(saved?.streak) || 0,
+        history: Array.isArray(saved?.history) ? saved.history.slice(0, 20) : []
+      };
+    } catch { return { wins: 0, losses: 0, draws: 0, streak: 0, history: [] }; }
+  }
+
+  function updateCareerStatsUI() {
+    const stats = readCareerStats();
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = farsiMoveNumber(value); };
+    set('careerWins', stats.wins);
+    set('careerLosses', stats.losses);
+    set('careerDraws', stats.draws);
+  }
+
+  function materialBalance() {
+    let player = 0;
+    let bot = 0;
+    for (const row of state.board) for (const piece of row) {
+      if (!piece || piece.type === 'k') continue;
+      if (piece.color === state.playerColor) player += materialValue(piece.type);
+      else bot += materialValue(piece.type);
+    }
+    return player - bot;
+  }
+
+  function endgameInsightMarkup() {
+    const material = materialBalance();
+    const materialText = material === 0 ? 'برابر' : `${material > 0 ? '+' : ''}${material}`;
+    const accuracy = Math.max(42, Math.min(96, Math.round(88 - state.moves.length / 5 + (material > 0 ? 5 : 0))));
+    return `<span><b>${farsiMoveNumber(Math.ceil(state.moves.length / 2))}</b>حرکت</span><span><b>${materialText}</b>مهره</span><span><b>${farsiMoveNumber(accuracy)}٪</b>کیفیت</span>`;
+  }
+
+  function recordCompletedGame(title, description = '') {
+    if (state.resultRecorded) return;
+    state.resultRecorded = true;
+    const stats = readCareerStats();
+    const draw = title.includes('تساوی') || title.includes('پات');
+    const win = title.includes('شما پیروز') || description.includes('شما برنده');
+    if (draw) { stats.draws++; stats.streak = 0; }
+    else if (win) { stats.wins++; stats.streak++; }
+    else { stats.losses++; stats.streak = 0; }
+    stats.history.unshift({ title, date: Date.now(), moves: state.moves.length, color: state.playerColor, fen: toFen() });
+    stats.history = stats.history.slice(0, 20);
+    if (typeof localStorage !== 'undefined') localStorage.setItem(CAREER_KEY, JSON.stringify(stats));
+    updateCareerStatsUI();
+  }
+
   function endGame(title, description) {
     state.gameOver = true;
     state.result = title;
     state.resultDescription = description;
     document.getElementById('endgameTitle').textContent = title;
     document.getElementById('endgameDescription').textContent = description;
+    document.getElementById('endgameInsights').innerHTML = endgameInsightMarkup();
+    recordCompletedGame(title, description);
     endgameModal.hidden = false;
     persistGame();
     renderStatus();
@@ -1151,6 +1272,7 @@
     updateCastlingRights(piece, from, captured, { y: move.y, x: move.x });
     state.enPassant = move.special === 'double-pawn' ? { y: (from.y + move.y) / 2, x: from.x } : null;
     state.halfmoveClock = piece.type === 'p' || captured ? 0 : state.halfmoveClock + 1;
+    if (state.timeControl !== 'none' && state.increment) state.timers[piece.color] += state.increment;
     if (piece.color === 'b') state.fullmoveNumber++;
     state.lastMove = { from: { ...from }, to: { y: move.y, x: move.x } };
     state.selected = null;
@@ -1245,11 +1367,17 @@
 
   function newGame() {
     const playerColor = state.playerColor;
+    const timeControl = state.timeControl;
+    const difficulty = state.difficulty;
+    const graphicsQuality = state.graphicsQuality;
     resetState();
     state.mode = 'bot';
     state.playerColor = playerColor;
     state.startedPlayerColor = playerColor;
     state.botColor = opposite(playerColor);
+    state.difficulty = difficulty;
+    state.graphicsQuality = graphicsQuality;
+    setTimeControl(timeControl);
     state.gameStarted = true;
     state.resumable = true;
     state.autoSave = true;
@@ -1296,6 +1424,11 @@
         enPassant: state.enPassant,
         capturedBy: state.capturedBy,
         timers: state.timers,
+        timeControl: state.timeControl,
+        initialTime: state.initialTime,
+        increment: state.increment,
+        difficulty: state.difficulty,
+        graphicsQuality: state.graphicsQuality,
         halfmoveClock: state.halfmoveClock,
         fullmoveNumber: state.fullmoveNumber,
         positionHistory: state.positionHistory,
@@ -1337,7 +1470,13 @@
       state.castling = { wK: Boolean(saved.castling?.wK), wQ: Boolean(saved.castling?.wQ), bK: Boolean(saved.castling?.bK), bQ: Boolean(saved.castling?.bQ) };
       state.enPassant = saved.enPassant && inside(saved.enPassant.y, saved.enPassant.x) ? saved.enPassant : null;
       state.capturedBy = { w: Array.isArray(saved.capturedBy?.w) ? saved.capturedBy.w : [], b: Array.isArray(saved.capturedBy?.b) ? saved.capturedBy.b : [] };
-      state.timers = { w: Math.max(0, Number(saved.timers?.w) || 600), b: Math.max(0, Number(saved.timers?.b) || 600) };
+      state.timeControl = TIME_CONTROLS[saved.timeControl] ? saved.timeControl : 'rapid10';
+      state.initialTime = TIME_CONTROLS[state.timeControl].initial || 0;
+      state.increment = Number(saved.increment) || TIME_CONTROLS[state.timeControl].increment;
+      state.difficulty = ['easy', 'normal', 'hard'].includes(saved.difficulty) ? saved.difficulty : 'normal';
+      state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(saved.graphicsQuality) ? saved.graphicsQuality : 'balanced';
+      const fallbackTime = TIME_CONTROLS[state.timeControl].initial || 0;
+      state.timers = { w: Math.max(0, Number(saved.timers?.w) || fallbackTime), b: Math.max(0, Number(saved.timers?.b) || fallbackTime) };
       state.halfmoveClock = Math.max(0, Number(saved.halfmoveClock) || 0);
       state.fullmoveNumber = Math.max(1, Number(saved.fullmoveNumber) || 1);
       state.positionHistory = Array.isArray(saved.positionHistory) && saved.positionHistory.length ? saved.positionHistory : [positionKey()];
@@ -1399,18 +1538,38 @@
     return { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 }[type] || 0;
   }
 
+  function evaluatePositionForBot(board) {
+    let score = 0;
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        const piece = board[y][x];
+        if (!piece || piece.type === 'k') continue;
+        const value = materialValue(piece.type);
+        const centrality = 3.5 - Math.abs(x - 3.5) + 3.5 - Math.abs(y - 3.5);
+        const attacked = isSquareAttacked(board, y, x, opposite(piece.color));
+        const sign = piece.color === state.botColor ? 1 : -1;
+        score += sign * (value + centrality * 5);
+        if (attacked) score -= sign * value * .12;
+      }
+    }
+    return score;
+  }
+
   function chooseBotMove() {
     const choices = getAllLegalMoves(state.botColor);
     if (!choices.length) return null;
+    if (state.difficulty === 'easy') return choices[Math.floor(Math.random() * choices.length)];
     return choices.map(choice => {
       const piece = state.board[choice.from.y][choice.from.x];
       const captured = choice.move.special === 'en-passant' ? state.board[choice.from.y][choice.move.x] : state.board[choice.move.y][choice.move.x];
-      const nextBoard = applyMoveToBoard(state.board, choice.from, choice.move, choice.move.y === 0 || choice.move.y === 7 ? 'q' : null);
+      const promotion = choice.move.y === 0 || choice.move.y === 7 ? 'q' : null;
+      const nextBoard = applyMoveToBoard(state.board, choice.from, choice.move, promotion);
       let score = (captured ? materialValue(captured.type) * 10 : 0) + materialValue(piece.type) / 100;
       score += isKingInCheck(opposite(state.botColor), nextBoard) ? 125 : 0;
       score += choice.move.special?.startsWith('castle') ? 35 : 0;
       score += (3.5 - Math.abs(choice.move.x - 3.5) + 3.5 - Math.abs(choice.move.y - 3.5)) * 3;
-      score += Math.random() * 18;
+      if (state.difficulty === 'hard') score += evaluatePositionForBot(nextBoard) * .17;
+      score += Math.random() * (state.difficulty === 'hard' ? 3 : 18);
       return { ...choice, score };
     }).sort((a, b) => b.score - a.score)[0];
   }
@@ -1488,7 +1647,17 @@
     menuToggle.classList.remove('active');
   }
 
+  function updateLaunchSettingsUI() {
+    const difficulty = document.getElementById('difficultySelect');
+    const time = document.getElementById('timeControlSelect');
+    const quality = document.getElementById('qualitySelect');
+    if (difficulty) difficulty.value = state.difficulty;
+    if (time) time.value = state.timeControl;
+    if (quality) quality.value = state.graphicsQuality;
+  }
+
   function updateColorChoiceUI() {
+    updateLaunchSettingsUI();
     const color = state.playerColor;
     document.querySelectorAll('[data-player-color]').forEach(button => {
       const selected = button.dataset.playerColor === color;
@@ -1529,11 +1698,17 @@
 
   function startSoloGame() {
     const selectedColor = state.playerColor;
+    const timeControl = state.timeControl;
+    const difficulty = state.difficulty;
+    const graphicsQuality = state.graphicsQuality;
     if (state.gameOver || state.colorSelectionChanged) {
       resetState();
       endgameModal.hidden = true;
       state.playerColor = selectedColor;
       state.startedPlayerColor = selectedColor;
+      state.difficulty = difficulty;
+      state.graphicsQuality = graphicsQuality;
+      setTimeControl(timeControl);
       state.colorSelectionChanged = false;
     }
     state.mode = 'bot';
@@ -1571,7 +1746,7 @@
   }
 
   function tickClock() {
-    if (!state.gameStarted || document.body.classList.contains('menu-open') || state.gameOver || state.pendingPromotion) return;
+    if (state.timeControl === 'none' || !state.gameStarted || document.body.classList.contains('menu-open') || state.gameOver || state.pendingPromotion) return;
     state.timers[state.turn] -= 1;
     if (state.timers[state.turn] <= 0) {
       state.timers[state.turn] = 0;
@@ -1588,6 +1763,9 @@
     boardEl.addEventListener('click', handleSquareClick);
     document.getElementById('startBotButton').addEventListener('click', startSoloGame);
     document.querySelectorAll('[data-player-color]').forEach(button => button.addEventListener('click', () => selectPlayerColor(button.dataset.playerColor)));
+    document.getElementById('difficultySelect').addEventListener('change', event => setDifficulty(event.target.value));
+    document.getElementById('timeControlSelect').addEventListener('change', event => setTimeControl(event.target.value));
+    document.getElementById('qualitySelect').addEventListener('change', event => setGraphicsQuality(event.target.value));
     document.getElementById('mainGuideButton').addEventListener('click', () => {
       const guide = document.getElementById('mainGuide');
       guide.hidden = !guide.hidden;
