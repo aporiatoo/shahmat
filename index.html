@@ -37,10 +37,9 @@
         </div>
         <p class="menu-kicker">A GAME OF PATIENCE &amp; POWER</p>
         <h1 id="mainMenuTitle">تاج‌وتخت، در <em>دستان تو</em></h1>
-        <p class="menu-description">یک دوئل کلاسیک روی یک دستگاه؛ با قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
+        <p class="menu-description">به میدان نبرد با استاد هوشمند وارد شوید؛ قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
         <div class="menu-primary-actions">
-          <button class="menu-play-button" id="startGameButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع دوئل</b><small>دو بازیکن · یک دستگاه</small></span></button>
-          <button class="menu-bot-button" id="startBotButton" type="button"><span>♟</span><span><b>نبرد با استاد هوشمند</b><small>حریف محلی · سطح تاکتیکی</small></span></button>
+          <button class="menu-play-button" id="startBotButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع نبرد</b><small>شما سفید · استاد هوشمند سیاه</small></span></button>
           <button class="menu-how-button" id="mainGuideButton" type="button"><span>؟</span> راهنمای سریع</button>
         </div>
         <div class="main-guide" id="mainGuide" hidden>
@@ -60,7 +59,7 @@
 
       <div class="game-status" aria-live="polite">
         <span class="status-dot"></span>
-        <span id="statusText">آماده‌ی شروع دوئل</span>
+        <span id="statusText">آماده‌ی شروع نبرد</span>
       </div>
 
       <button class="menu-toggle" id="menuToggle" type="button" aria-label="باز کردن منوی بازی" aria-expanded="false" aria-controls="gameMenu">
@@ -71,7 +70,7 @@
     <div class="menu-scrim" id="menuScrim" aria-hidden="true"></div>
     <aside class="game-menu" id="gameMenu" aria-label="منوی کنترل بازی" aria-hidden="true">
       <div class="drawer-head">
-        <div><p class="eyebrow">GAME CONTROL</p><strong>فرماندهی دوئل</strong></div>
+        <div><p class="eyebrow">GAME CONTROL</p><strong>فرماندهی نبرد</strong></div>
         <button class="drawer-close" id="menuClose" type="button" aria-label="بستن منو">×</button>
       </div>
 
@@ -84,8 +83,7 @@
       <nav class="drawer-actions" aria-label="فرمان‌های بازی">
         <button id="menuUndo" type="button"><span class="drawer-icon">↶</span><span>بازگشت حرکت</span><small>Ctrl Z</small></button>
         <button id="menuHint" type="button"><span class="drawer-icon">✦</span><span>راهنمای هوشمند</span><small>حرکت پیشنهادی</small></button>
-        <button id="menuFlip" type="button"><span class="drawer-icon">⟳</span><span>چرخاندن صفحه</span><small>F</small></button>
-        <button id="menuFocus" type="button"><span class="drawer-icon">□</span><span>حالت تمرکز</span><small id="focusLabel">خاموش</small></button>
+        <button id="menuFocus" type="button"><span class="drawer-icon">□</span><span>نمای نزدیک</span><small id="focusLabel">خاموش</small></button>
       </nav>
 
       <details class="drawer-details" id="moveDetails">
@@ -130,7 +128,7 @@
       <section class="board-area" aria-label="صفحه شطرنج">
         <div class="board-heading">
           <div><p class="eyebrow">THE ROYAL MATCH · 2026</p><h2>یک حرکت تا <em>جاودانگی</em></h2></div>
-          <div class="board-meta"><span id="moveCounter">حرکت ۰ از ۶۰</span><i></i><span id="orientationText">دید سفید</span></div>
+          <div class="board-meta"><span id="moveCounter">حرکت ۰ از ۶۰</span><i></i><span id="orientationText">نمای پشت مهره‌های شما</span></div>
         </div>
 
         <section class="player-rail dark-rail" id="blackCard" aria-label="بازیکن سیاه">
@@ -148,7 +146,7 @@
           <div class="coordinate file-coordinates" aria-hidden="true"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
         </div>
 
-        <div class="board-footer"><div class="turn-guide"><span class="turn-piece">♙</span><span><b id="turnTitle">آماده‌ی شروع</b><small id="turnHint">برای آغاز، دکمه‌ی شروع دوئل را بزنید</small></span></div></div>
+        <div class="board-footer"><div class="turn-guide"><span class="turn-piece">♙</span><span><b id="turnTitle">آماده‌ی شروع</b><small id="turnHint">برای آغاز، دکمه‌ی شروع نبرد را بزنید</small></span></div></div>
 
         <section class="player-rail light-rail" id="whiteCard" aria-label="بازیکن سفید">
           <div class="avatar user-avatar">م</div>

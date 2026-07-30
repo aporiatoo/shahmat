@@ -67,7 +67,7 @@
       halfmoveClock: 0,
       fullmoveNumber: 1,
       positionHistory: [],
-      mode: 'local',
+      mode: 'bot',
       botColor: 'b',
       botThinking: false,
       resumable: false,
@@ -129,8 +129,8 @@
     state.halfmoveClock = snapshot.halfmoveClock ?? 0;
     state.fullmoveNumber = snapshot.fullmoveNumber ?? 1;
     state.positionHistory = clonePlain(snapshot.positionHistory) || [positionKey()];
-    state.mode = snapshot.mode || 'local';
-    state.botColor = snapshot.botColor || 'b';
+    state.mode = 'bot';
+    state.botColor = 'b';
     state.botThinking = false;
     state.resumable = Boolean(snapshot.resumable);
     state.autoSave = snapshot.autoSave !== false;
@@ -658,11 +658,20 @@
 
   function updateThreeCamera() {
     if (!threeBoard) return;
-    const { camera, target } = threeBoard;
-    const direction = state.flipped ? -1 : 1;
-    const zoom = state.focused ? .93 : 1;
-    camera.position.set(7.9 * direction * zoom, 10.9 * zoom, 9.7 * direction * zoom);
-    camera.fov = state.focused ? 43 : 46;
+    const { camera, target, desiredCamera, desiredTarget } = threeBoard;
+    const selectedPiece = state.selected && state.board[state.selected.y][state.selected.x];
+    const followsPlayerPiece = selectedPiece?.color === 'w';
+    const selectedX = followsPlayerPiece ? state.selected.x - 3.5 : 0;
+    const selectedZ = followsPlayerPiece ? state.selected.y - 3.5 : 0;
+    const zoom = state.focused ? .91 : 1;
+    desiredTarget.set(selectedX * .48, .34, (followsPlayerPiece ? selectedZ * .42 - .45 : -.55));
+    desiredCamera.set(selectedX * .32, 13.1 * zoom, (followsPlayerPiece ? selectedZ + 10.7 : 13.35) * zoom);
+    camera.fov = state.focused ? 43 : 47;
+    if (!threeBoard.cameraReady) {
+      camera.position.copy(desiredCamera);
+      target.copy(desiredTarget);
+      threeBoard.cameraReady = true;
+    }
     camera.lookAt(target);
     camera.updateProjectionMatrix();
   }
@@ -790,7 +799,7 @@
         templates[`${color}${type}`] = createThreePiece(type, color, THREE, materials);
       }));
 
-      threeBoard = { THREE, canvas, renderer, scene, camera, target, materials, pieceRoot, indicatorRoot, templates, raycaster: new THREE.Raycaster(), pointer: new THREE.Vector2(), animationTime: 0 };
+      threeBoard = { THREE, canvas, renderer, scene, camera, target, desiredCamera: new THREE.Vector3(), desiredTarget: new THREE.Vector3(), cameraReady: false, materials, pieceRoot, indicatorRoot, templates, raycaster: new THREE.Raycaster(), pointer: new THREE.Vector2(), animationTime: 0 };
       configureThreeColors();
       boardEl.classList.add('three-ready');
       boardStage.classList.add('three-stage');
@@ -880,7 +889,12 @@
 
   function animateThreeBoard(timestamp = 0) {
     if (!threeBoard) return;
-    const { renderer, scene, camera, indicatorRoot } = threeBoard;
+    const { renderer, scene, camera, indicatorRoot, target, desiredCamera, desiredTarget } = threeBoard;
+    if (threeBoard.cameraReady) {
+      camera.position.lerp(desiredCamera, .085);
+      target.lerp(desiredTarget, .085);
+      camera.lookAt(target);
+    }
     const time = timestamp * .001;
     indicatorRoot.children.forEach(marker => {
       const kind = marker.userData.markerKind;
@@ -1033,12 +1047,12 @@
     const colorName = state.turn === 'w' ? 'سفید' : 'سیاه';
     const idle = !state.gameStarted;
     const botTurn = state.mode === 'bot' && state.botThinking;
-    document.getElementById('statusText').textContent = state.gameOver ? state.result : (idle ? 'آماده‌ی شروع دوئل' : (botTurn ? 'استاد هوشمند · در حال فکر کردن' : `بازی دوستانه · نوبت ${colorName}${inCheck ? ' · کیش' : ''}`));
-    document.getElementById('turnTitle').textContent = state.gameOver ? 'نبرد تمام شد' : (idle ? 'دوئل آماده است' : (botTurn ? 'استاد در حال انتخاب حرکت است' : `نوبت ${colorName} است`));
-    document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (idle ? 'برای آغاز، دکمه‌ی شروع دوئل را بزنید' : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`));
+    document.getElementById('statusText').textContent = state.gameOver ? state.result : (idle ? 'آماده‌ی شروع نبرد' : (botTurn ? 'استاد هوشمند · در حال فکر کردن' : `نبرد با استاد · نوبت ${colorName}${inCheck ? ' · کیش' : ''}`));
+    document.getElementById('turnTitle').textContent = state.gameOver ? 'نبرد تمام شد' : (idle ? 'نبرد آماده است' : (botTurn ? 'استاد در حال انتخاب حرکت است' : `نوبت ${colorName} است`));
+    document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (idle ? 'برای آغاز، دکمه‌ی شروع نبرد را بزنید' : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`));
     document.querySelector('.turn-piece').textContent = state.gameOver ? '♔' : unicodePieces[state.turn].p;
     document.getElementById('moveCounter').textContent = `حرکت ${farsiMoveNumber(Math.ceil(state.moves.length / 2))} از ۶۰`;
-    document.getElementById('orientationText').textContent = state.flipped ? 'دید سیاه' : 'دید سفید';
+    document.getElementById('orientationText').textContent = 'نمای پشت مهره‌های شما';
     const wStatus = document.getElementById('whiteKingStatus');
     const bStatus = document.getElementById('blackKingStatus');
     const whiteChecked = isKingInCheck('w');
@@ -1223,8 +1237,8 @@
 
   function resignGame() {
     if (!state.gameStarted || state.gameOver) return;
-    const winner = state.turn === 'w' ? 'سیاه' : 'سفید';
-    endGame(`تسلیم · ${winner} پیروز شد`, `بازیکن ${state.turn === 'w' ? 'سفید' : 'سیاه'} بازی را واگذار کرد.`);
+    state.botThinking = false;
+    endGame('تسلیم · استاد هوشمند پیروز شد', 'شما نبرد را واگذار کردید. برای تلاش دوباره، بازی تازه را انتخاب کنید.');
     closeGameMenu();
     render();
   }
@@ -1299,9 +1313,9 @@
       state.halfmoveClock = Math.max(0, Number(saved.halfmoveClock) || 0);
       state.fullmoveNumber = Math.max(1, Number(saved.fullmoveNumber) || 1);
       state.positionHistory = Array.isArray(saved.positionHistory) && saved.positionHistory.length ? saved.positionHistory : [positionKey()];
-      state.mode = saved.mode === 'bot' ? 'bot' : 'local';
-      state.botColor = saved.botColor === 'w' ? 'w' : 'b';
-      state.flipped = Boolean(saved.flipped);
+      state.mode = 'bot';
+      state.botColor = 'b';
+      state.flipped = false;
       state.focused = Boolean(saved.focused);
       state.botThinking = false;
       state.autoSave = saved.autoSave !== false;
@@ -1448,24 +1462,26 @@
     mainMenu.classList.remove('is-hidden');
     document.body.classList.add('menu-open');
     const startLabel = document.getElementById('startGameText');
-    const startSubline = document.querySelector('#startGameButton small');
+    const startSubline = document.querySelector('#startBotButton small');
     if (state.gameOver) {
-      startLabel.textContent = 'شروع بازی تازه';
-      startSubline.textContent = 'چیدمان جدید · ساعت تازه';
+      startLabel.textContent = 'شروع نبرد تازه';
+      startSubline.textContent = 'شما سفید · استاد هوشمند سیاه';
     } else if (state.gameStarted || state.resumable) {
-      startLabel.textContent = 'ادامه‌ی دوئل';
+      startLabel.textContent = 'ادامه‌ی نبرد';
       startSubline.textContent = 'بازی تا بازگشت شما متوقف است';
     } else {
-      startLabel.textContent = 'شروع دوئل';
-      startSubline.textContent = 'دو بازیکن · یک دستگاه';
+      startLabel.textContent = 'شروع نبرد';
+      startSubline.textContent = 'شما سفید · استاد هوشمند سیاه';
     }
   }
 
-  function startGame() {
+  function startSoloGame() {
     if (state.gameOver) {
       resetState();
       endgameModal.hidden = true;
     }
+    state.mode = 'bot';
+    state.botColor = 'b';
     state.gameStarted = true;
     state.resumable = true;
     state.autoSave = true;
@@ -1473,29 +1489,8 @@
     mainMenu.classList.add('is-hidden');
     document.body.classList.remove('menu-open');
     render();
-    showToast(state.mode === 'bot' ? 'نبرد با استاد هوشمند ادامه پیدا کرد.' : 'دوئل آغاز شد؛ نوبت مهره‌های سفید است.');
-    if (state.mode === 'bot' && state.turn === state.botColor) scheduleBotMove();
-  }
-
-  function startBotGame() {
-    resetState();
-    state.mode = 'bot';
-    state.botColor = 'b';
-    state.gameStarted = true;
-    state.resumable = true;
-    endgameModal.hidden = true;
-    persistGame();
-    mainMenu.classList.add('is-hidden');
-    document.body.classList.remove('menu-open');
-    render();
-    showToast('نبرد با استاد هوشمند شروع شد؛ شما با مهره‌های سفید بازی می‌کنید.');
-  }
-
-  function flipThreeView() {
-    if (!state.gameStarted) return;
-    state.flipped = !state.flipped;
-    syncThreeBoard();
-    renderStatus();
+    showToast(state.moves.length ? 'نبرد با استاد هوشمند ادامه پیدا کرد.' : 'نبرد آغاز شد؛ شما با مهره‌های سفید بازی می‌کنید.');
+    if (state.turn === state.botColor) scheduleBotMove();
   }
 
   function toggleFocusMode() {
@@ -1534,8 +1529,7 @@
 
   function wireControls() {
     boardEl.addEventListener('click', handleSquareClick);
-    document.getElementById('startGameButton').addEventListener('click', startGame);
-    document.getElementById('startBotButton').addEventListener('click', startBotGame);
+    document.getElementById('startBotButton').addEventListener('click', startSoloGame);
     document.getElementById('mainGuideButton').addEventListener('click', () => {
       const guide = document.getElementById('mainGuide');
       guide.hidden = !guide.hidden;
@@ -1548,7 +1542,6 @@
     const closeAfter = action => () => { action(); closeGameMenu(); };
     document.getElementById('menuUndo').addEventListener('click', closeAfter(undoMove));
     document.getElementById('menuHint').addEventListener('click', closeAfter(giveHint));
-    document.getElementById('menuFlip').addEventListener('click', closeAfter(flipThreeView));
     document.getElementById('menuFocus').addEventListener('click', closeAfter(toggleFocusMode));
     document.getElementById('menuTheme').addEventListener('click', toggleTheme);
     document.getElementById('menuSound').addEventListener('click', toggleSound);
@@ -1586,9 +1579,6 @@
           state.legalMoves = [];
           render();
         }
-      }
-      if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && state.gameStarted) {
-        flipThreeView();
       }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();

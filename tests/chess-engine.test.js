@@ -339,7 +339,7 @@ test('FEN loading restores board, turn, castling and en passant', () => {
   assert.equal(state.fullmoveNumber, 12);
 });
 
-test('local persistence restores a paused resumable game with settings', () => {
+test('local persistence restores a paused resumable solo game with settings', () => {
   chess.resetState();
   const before = chess.getState();
   before.timers = { w: 543, b: 411 };
@@ -356,7 +356,7 @@ test('local persistence restores a paused resumable game with settings', () => {
   assert.equal(after.timers.w, 543);
   assert.equal(after.timers.b, 411);
   assert.equal(after.mode, 'bot');
-  assert.equal(after.flipped, true);
+  assert.equal(after.flipped, false);
   assert.equal(after.focused, true);
   assert.equal(after.gameStarted, false);
   assert.equal(after.resumable, true);
