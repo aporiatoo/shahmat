@@ -13,6 +13,10 @@
   --board-darker: #31483e;
   --danger: #e36a61;
   --square-size: clamp(40px, 7.05vw, 78px);
+  --font-ui: "Estedad", "Vazirmatn", Tahoma, Arial, sans-serif;
+  --font-readable: "Vazirmatn", Tahoma, Arial, sans-serif;
+  --font-royal: "Noto Naskh Arabic", "Vazirmatn", serif;
+  --font-display: "Lalezar", "Estedad", "Vazirmatn", sans-serif;
   color-scheme: dark;
 }
 
@@ -57,8 +61,20 @@ body.alt-light { --board-light: #cfbc9e; --board-dark: #775542; background: radi
 
 .color-choice { margin: 0 0 12px; padding: 10px; border: 1px solid rgba(204,220,210,.1); border-radius: 10px; background: rgba(255,255,255,.025); text-align: right; }.color-choice > span { display: block; margin-bottom: 7px; color: #8ea199; font-size: 8px; }.color-choice > div { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }.color-choice-button { min-height: 39px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid rgba(215,231,221,.1); border-radius: 8px; color: #b9c8c0; background: rgba(255,255,255,.025); transition: .18s ease; }.color-choice-button i { font: 23px Georgia,serif; font-style: normal; }.color-choice-button b { font-size: 9px; }.color-choice-button:first-child i { color: #f4f0df; text-shadow: 0 2px 5px rgba(0,0,0,.35); }.color-choice-button:last-child i { color: #518173; text-shadow: 0 2px 5px rgba(0,0,0,.45); }.color-choice-button.active { color: #f6d892; border-color: rgba(230,188,108,.7); background: linear-gradient(135deg,rgba(196,144,61,.2),rgba(53,100,86,.17)); box-shadow: inset 0 1px rgba(255,238,190,.12), 0 0 15px rgba(214,165,77,.1); }
 
-/* Persian type system: display, royal prose, interface and long-form text each use a fitting face. */
-.brand strong, .menu-brand strong, .main-menu h1, .menu-play-button b { font-family: var(--font-display); font-weight: 400; }.main-menu h1 { letter-spacing: -.35px; line-height: 1.25; }.board-heading h2, .modal-card h2, .endgame-card h2, .turn-guide b { font-family: var(--font-royal); font-weight: 700; }.board-heading h2 { line-height: 1.25; }.modal-card h2 { line-height: 1.55; }.menu-description, .turn-guide small, .drawer-coach, .endgame-card p:not(.eyebrow), .rail-details small { font-family: var(--font-readable); }.game-status, .player-rail, .drawer-head strong, .drawer-actions button, .drawer-details summary, .drawer-utility button, .drawer-bottom-actions button, .menu-how-button, .menu-play-button, .toast, .stat-row, .captured-row { font-family: var(--font-ui); }.rail-details strong, .drawer-head strong, .turn-guide b { font-weight: 700; }
+/* Persian type system: each type of content gets an intentional Persian face. */
+:lang(fa) { font-feature-settings: "kern" 1, "liga" 1, "calt" 1; text-rendering: optimizeLegibility; }
+body, button, input, textarea, select { font-family: var(--font-ui); }
+.brand strong, .menu-brand strong, .main-menu h1, .menu-play-button b { font-family: var(--font-display); font-weight: 400; }
+.brand strong, .menu-brand strong { letter-spacing: 0; }
+.main-menu h1 { letter-spacing: -.35px; line-height: 1.25; }
+.board-heading h2, .modal-card h2, .endgame-card h2, .turn-guide b { font-family: var(--font-royal); font-weight: 700; }
+.board-heading h2 { line-height: 1.25; }
+.modal-card h2 { line-height: 1.55; }
+.menu-description, .turn-guide small, .drawer-coach, .endgame-card p:not(.eyebrow), .rail-details small { font-family: var(--font-readable); }
+.game-status, .player-rail, .drawer-head strong, .drawer-actions button, .drawer-details summary, .drawer-utility button, .drawer-bottom-actions button, .menu-how-button, .menu-play-button, .toast, .stat-row, .captured-row, .color-choice, .archive-actions { font-family: var(--font-ui); }
+.rail-details strong, .drawer-head strong, .turn-guide b { font-weight: 700; }
+.menu-play-button small, .color-choice > span, .drawer-coach { font-family: var(--font-readable); }
+
 
 @keyframes selectedPulse { 50% { box-shadow: inset 0 0 22px rgba(255,216,123,.63),0 0 17px rgba(255,210,103,.68); } }@keyframes checkAlert { from { box-shadow: inset 0 0 0 3px rgba(207,70,54,.3), inset 0 0 12px rgba(207,70,54,.15); } to { box-shadow: inset 0 0 0 3px rgba(232,87,66,.9), inset 0 0 25px rgba(232,87,66,.54); } }@keyframes pieceLanding { 0% { transform: translateZ(46px) rotateX(-16deg) scale(1.08); } 100% { transform: translateZ(19px) rotateX(-16deg); } }@keyframes twinkle { 0%,100% { opacity: .25; transform: scale(.8); } 50% { opacity: .78; transform: scale(1.25); } }
 @media (max-width: 700px) { :root { --square-size: calc((100vw - 56px) / 8); }.topbar { height: 63px; padding: 0 16px; }.brand strong { font-size: 19px; }.game-status { display: none; }.app-shell { min-height: calc(100vh - 63px); padding: 20px 12px 28px; }.board-heading { min-height: 44px; padding: 0 5px; }.board-heading h2 { font-size: 20px; }.eyebrow { font-size: 7px; margin-bottom: 5px; }.board-meta { padding-top: 3px; font-size: 8px; gap: 5px; }.player-rail { min-height: 51px; padding: 7px 9px; border-radius: 10px; }.dark-rail { margin-bottom: 9px; }.light-rail { margin-top: 14px; }.avatar { width: 34px; height: 34px; }.clock { height: 31px; min-width: 69px; padding: 0 7px; font-size: 15px; }.board-stage { margin-top: 0; padding-top: 9px; }.board { border-width: 5px; box-shadow: inset 0 0 0 1px #2c2218,0 9px 0 #281b12,0 14px 0 #7d5b31,0 18px 16px rgba(0,0,0,.46); }.rank-coordinates { top: 12px; }.file-coordinates { left: 17px; }.square .square-label { top: 1px; left: 2px; font-size: 6px; }.piece { width: 84%; }.board-footer { margin-top: 16px; }.turn-guide b { font-size: 10px; }.turn-guide small { font-size: 8px; }.game-menu { top: 74px; right: 12px; max-height: calc(100vh - 86px); }.main-menu { padding: 18px; }.main-menu:before { inset: 11px; }.main-menu-card { padding: 30px 20px 24px; }.menu-brand strong { font-size: 25px; }.menu-kicker { margin-top: 23px; }.menu-description { font-size: 10px; margin-bottom: 20px; }.menu-showcase { width: 110vw; transform: translate(-46vw, 24vh) rotate(-14deg); }.promotion-choices button { height: 67px; font-size: 43px; }.modal-card { padding: 25px 17px; }.modal-card h2 { font-size: 19px; } }
