@@ -675,7 +675,7 @@
     const direction = state.playerColor === 'w' ? 1 : -1;
     const zoom = state.focused ? .91 : 1;
     desiredTarget.set(selectedX * .48, .34, (followsPlayerPiece ? selectedZ * .42 - direction * .45 : -direction * .55));
-    desiredCamera.set(selectedX * .32, 13.1 * zoom, (followsPlayerPiece ? selectedZ + direction * 10.7 : direction * 13.35) * zoom);
+    desiredCamera.set(selectedX * .32, 11.45 * zoom, (followsPlayerPiece ? selectedZ + direction * 11.05 : direction * 13.9) * zoom);
     camera.fov = state.focused ? 43 : 47;
     if (!threeBoard.cameraReady) {
       camera.position.copy(desiredCamera);

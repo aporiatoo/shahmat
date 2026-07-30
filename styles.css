@@ -68,8 +68,8 @@ body.alt-light { --board-light: #cfbc9e; --board-dark: #775542; background: radi
 
 /* Viewport-fit game layout: keep the complete match scene on one screen. */
 :root {
-  --game-chrome: 315px;
-  --square-size: min(72px, 7vw, max(34px, calc((100dvh - var(--game-chrome)) / 8)));
+  --game-chrome: 290px;
+  --square-size: min(80px, 7.4vw, max(34px, calc((100dvh - var(--game-chrome)) / 8)));
 }
 html, body { height: 100%; }
 html { overflow: hidden; }
