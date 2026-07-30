@@ -73,6 +73,7 @@
       gameplayMode: 'classic',
       opening: 'start',
       assistLevel: 'coach',
+      renderMode: '3d',
       objective: null,
       mission: null,
       botMessage: 'برای کنترل مرکز آماده باشید.',
@@ -128,6 +129,7 @@
       gameplayMode: state.gameplayMode,
       opening: state.opening,
       assistLevel: state.assistLevel,
+      renderMode: state.renderMode,
       objective: clonePlain(state.objective),
       mission: clonePlain(state.mission),
       botMessage: state.botMessage,
@@ -168,6 +170,7 @@
     state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(snapshot.gameplayMode) ? snapshot.gameplayMode : 'classic';
     state.opening = ['start', 'sicilian', 'london', 'caro'].includes(snapshot.opening) ? snapshot.opening : 'start';
     state.assistLevel = ['free', 'coach', 'master'].includes(snapshot.assistLevel) ? snapshot.assistLevel : 'coach';
+    state.renderMode = snapshot.renderMode === 'classic' ? 'classic' : '3d';
     state.objective = clonePlain(snapshot.objective);
     state.mission = clonePlain(snapshot.mission);
     state.botMessage = snapshot.botMessage || 'برای کنترل مرکز آماده باشید.';
@@ -361,6 +364,22 @@
 
   function setAssistLevel(level) {
     state.assistLevel = ['free', 'coach', 'master'].includes(level) ? level : 'coach';
+    updateLaunchSettingsUI();
+  }
+
+  function setRenderMode(mode) {
+    state.renderMode = mode === 'classic' ? 'classic' : '3d';
+    if (state.renderMode === 'classic') {
+      if (threeBoard?.animationFrame) window.cancelAnimationFrame(threeBoard.animationFrame);
+      threeBoard?.renderer.dispose();
+      threeBoard = null;
+      boardEl.classList.remove('three-ready');
+      boardStage.classList.remove('three-stage');
+      render();
+    } else {
+      initThreeBoard();
+      render();
+    }
     updateLaunchSettingsUI();
   }
 
@@ -951,7 +970,7 @@
   }
 
   function initThreeBoard() {
-    if (!window.THREE) return;
+    if (threeBoard || state.renderMode === 'classic' || !window.THREE) return;
     const THREE = window.THREE;
     const canvas = document.getElementById('threeCanvas');
     if (!canvas) return;
@@ -1637,6 +1656,7 @@
     const gameplayMode = state.gameplayMode;
     const opening = state.opening;
     const assistLevel = state.assistLevel;
+    const renderMode = state.renderMode;
     resetState();
     state.mode = 'bot';
     state.playerColor = playerColor;
@@ -1648,6 +1668,7 @@
     state.gameplayMode = gameplayMode;
     state.opening = opening;
     state.assistLevel = assistLevel;
+    state.renderMode = renderMode;
     setEnvironment(environment);
     setTimeControl(timeControl);
     state.gameStarted = true;
@@ -1716,6 +1737,7 @@
         gameplayMode: state.gameplayMode,
         opening: state.opening,
         assistLevel: state.assistLevel,
+        renderMode: state.renderMode,
         objective: state.objective,
         mission: state.mission,
         botMessage: state.botMessage,
@@ -1769,6 +1791,7 @@
       state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(saved.gameplayMode) ? saved.gameplayMode : 'classic';
       state.opening = ['start', 'sicilian', 'london', 'caro'].includes(saved.opening) ? saved.opening : 'start';
       state.assistLevel = ['free', 'coach', 'master'].includes(saved.assistLevel) ? saved.assistLevel : 'coach';
+      state.renderMode = saved.renderMode === 'classic' ? 'classic' : '3d';
       state.objective = saved.objective || null;
       state.mission = saved.mission || null;
       state.botMessage = saved.botMessage || 'برای کنترل مرکز آماده باشید.';
@@ -1956,6 +1979,7 @@
     const mode = document.getElementById('gameplayModeSelect');
     const opening = document.getElementById('openingSelect');
     const assist = document.getElementById('assistSelect');
+    const renderMode = document.getElementById('renderModeSelect');
     if (difficulty) difficulty.value = state.difficulty;
     if (time) time.value = state.timeControl;
     if (quality) quality.value = state.graphicsQuality;
@@ -1963,6 +1987,7 @@
     if (mode) mode.value = state.gameplayMode;
     if (opening) opening.value = state.opening;
     if (assist) assist.value = state.assistLevel;
+    if (renderMode) renderMode.value = state.renderMode;
     updateMissionUI();
   }
 
@@ -2017,6 +2042,7 @@
     const gameplayMode = state.gameplayMode;
     const opening = state.opening;
     const assistLevel = state.assistLevel;
+    const renderMode = state.renderMode;
     if (state.gameOver || state.colorSelectionChanged) {
       resetState();
       endgameModal.hidden = true;
@@ -2028,6 +2054,7 @@
       state.gameplayMode = gameplayMode;
       state.opening = opening;
       state.assistLevel = assistLevel;
+      state.renderMode = renderMode;
       setEnvironment(environment);
       setTimeControl(timeControl);
       state.colorSelectionChanged = false;
@@ -2091,6 +2118,7 @@
     document.getElementById('gameplayModeSelect').addEventListener('change', event => setGameplayMode(event.target.value));
     document.getElementById('openingSelect').addEventListener('change', event => setOpening(event.target.value));
     document.getElementById('assistSelect').addEventListener('change', event => setAssistLevel(event.target.value));
+    document.getElementById('renderModeSelect').addEventListener('change', event => setRenderMode(event.target.value));
     document.getElementById('mainGuideButton').addEventListener('click', () => {
       const guide = document.getElementById('mainGuide');
       guide.hidden = !guide.hidden;
