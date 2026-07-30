@@ -64,5 +64,78 @@ body.alt-light { --board-light: #cfbc9e; --board-dark: #775542; background: radi
 @media (max-width: 700px) { :root { --square-size: calc((100vw - 56px) / 8); }.topbar { height: 63px; padding: 0 16px; }.brand strong { font-size: 19px; }.game-status { display: none; }.app-shell { min-height: calc(100vh - 63px); padding: 20px 12px 28px; }.board-heading { min-height: 44px; padding: 0 5px; }.board-heading h2 { font-size: 20px; }.eyebrow { font-size: 7px; margin-bottom: 5px; }.board-meta { padding-top: 3px; font-size: 8px; gap: 5px; }.player-rail { min-height: 51px; padding: 7px 9px; border-radius: 10px; }.dark-rail { margin-bottom: 9px; }.light-rail { margin-top: 14px; }.avatar { width: 34px; height: 34px; }.clock { height: 31px; min-width: 69px; padding: 0 7px; font-size: 15px; }.board-stage { margin-top: 0; padding-top: 9px; }.board { border-width: 5px; box-shadow: inset 0 0 0 1px #2c2218,0 9px 0 #281b12,0 14px 0 #7d5b31,0 18px 16px rgba(0,0,0,.46); }.rank-coordinates { top: 12px; }.file-coordinates { left: 17px; }.square .square-label { top: 1px; left: 2px; font-size: 6px; }.piece { width: 84%; }.board-footer { margin-top: 16px; }.turn-guide b { font-size: 10px; }.turn-guide small { font-size: 8px; }.game-menu { top: 74px; right: 12px; max-height: calc(100vh - 86px); }.main-menu { padding: 18px; }.main-menu:before { inset: 11px; }.main-menu-card { padding: 30px 20px 24px; }.menu-brand strong { font-size: 25px; }.menu-kicker { margin-top: 23px; }.menu-description { font-size: 10px; margin-bottom: 20px; }.menu-showcase { width: 110vw; transform: translate(-46vw, 24vh) rotate(-14deg); }.promotion-choices button { height: 67px; font-size: 43px; }.modal-card { padding: 25px 17px; }.modal-card h2 { font-size: 19px; } }
 @media (max-height: 670px) and (min-width: 701px) { .main-menu-card { transform: scale(.87); }.menu-showcase { transform: translate(-34vw, 1vh) rotate(-14deg) scale(.85); } }
 @media (prefers-reduced-motion: reduce) { *,*:before,*:after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
--34vw, 1vh) rotate(-14deg) scale(.85); } }
 @media (prefers-reduced-motion: reduce) { *,*:before,*:after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+/* Viewport-fit game layout: keep the complete match scene on one screen. */
+:root {
+  --game-chrome: 315px;
+  --square-size: min(72px, 7vw, max(34px, calc((100dvh - var(--game-chrome)) / 8)));
+}
+html, body { height: 100%; }
+html { overflow: hidden; }
+body:not(.menu-open) { overflow: hidden; }
+.topbar { height: 64px; }
+.app-shell {
+  height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
+  min-height: 0;
+  overflow: hidden;
+  padding: 13px 20px 11px;
+  display: flex;
+  align-items: center;
+}
+.board-area { max-height: 100%; display: flex; flex: 1 1 auto; flex-direction: column; justify-content: center; }
+.board-heading { min-height: 42px; flex: 0 0 42px; }
+.player-rail { min-height: 44px; padding: 5px 10px; }
+.dark-rail { margin-bottom: 5px; }
+.light-rail { margin-top: 7px; }
+.avatar { width: 31px; height: 31px; border-radius: 9px; }
+.rail-details strong { font-size: 10px; }
+.rail-details small { font-size: 7px; }
+.clock { min-width: 72px; height: 29px; font-size: 15px; }
+.board-stage { margin-top: 0; padding-top: 5px; padding-bottom: 14px; flex: 0 0 auto; }
+.board-footer { margin-top: 7px; min-height: 31px; }
+.turn-piece { width: 27px; height: 27px; font-size: 21px; }
+.turn-guide b { font-size: 10px; }
+.turn-guide small { font-size: 8px; }
+
+@media (max-width: 700px) {
+  :root {
+    --game-chrome: 255px;
+    --square-size: min(calc((100vw - 52px) / 8), max(28px, calc((100dvh - var(--game-chrome)) / 8)));
+  }
+  .topbar { height: 59px; }
+  .app-shell {
+    height: calc(100vh - 59px);
+    height: calc(100dvh - 59px);
+    padding: 7px 10px 6px;
+  }
+  .board-heading { min-height: 34px; flex-basis: 34px; }
+  .board-heading h2 { font-size: 18px; }
+  .board-meta { font-size: 7px; }
+  .player-rail { min-height: 39px; padding: 4px 8px; border-radius: 8px; }
+  .dark-rail { margin-bottom: 2px; }
+  .light-rail { margin-top: 3px; }
+  .avatar { width: 27px; height: 27px; border-radius: 8px; }
+  .rail-details strong { font-size: 9px; }
+  .rail-details small { display: none; }
+  .clock { min-width: 63px; height: 26px; font-size: 13px; }
+  .board-stage { width: calc(var(--board-width) + 30px); padding: 3px 14px 11px; }
+  .rank-coordinates { transform: translateX(10px); }
+  .file-coordinates { left: 14px; }
+  .board-footer { margin-top: 4px; min-height: 27px; }
+  .turn-piece { width: 24px; height: 24px; font-size: 19px; }
+  .turn-guide b { font-size: 9px; }
+  .turn-guide small { display: none; }
+}
+
+@media (max-height: 520px) {
+  :root {
+    --game-chrome: 205px;
+    --square-size: max(26px, calc((100dvh - var(--game-chrome)) / 8));
+  }
+  .board-heading { display: none; }
+  .player-rail { min-height: 32px; }
+  .avatar { display: none; }
+  .board-footer { display: none; }
+}
