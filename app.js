@@ -335,7 +335,7 @@
 
   function createLatheModel(THREE, profile, material) {
     const points = profile.map(([radius, height]) => new THREE.Vector2(radius, height));
-    const mesh = new THREE.Mesh(new THREE.LatheGeometry(points, 40), material);
+    const mesh = new THREE.Mesh(new THREE.LatheGeometry(points, 64), material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     return mesh;
@@ -353,88 +353,153 @@
     const group = new THREE.Group();
     const main = color === 'w' ? materials.light : materials.dark;
     const accent = color === 'w' ? materials.lightAccent : materials.darkAccent;
+    const inlay = color === 'w' ? materials.inlay : materials.darkInlay;
     const profile = {
-      p: [[.47,0],[.51,.04],[.49,.09],[.35,.14],[.31,.25],[.29,.37],[.22,.48],[.19,.54]],
-      r: [[.48,0],[.52,.04],[.49,.10],[.35,.15],[.31,.27],[.30,.36]],
-      n: [[.48,0],[.52,.04],[.49,.10],[.35,.15],[.30,.29],[.28,.39]],
-      b: [[.48,0],[.52,.04],[.49,.10],[.35,.15],[.29,.30],[.24,.49],[.19,.60]],
-      q: [[.50,0],[.54,.04],[.50,.11],[.38,.16],[.32,.32],[.27,.50],[.21,.62]],
-      k: [[.51,0],[.55,.04],[.51,.11],[.39,.16],[.32,.33],[.27,.54],[.20,.69]]
+      p: [[.46,0],[.51,.025],[.52,.055],[.48,.09],[.38,.12],[.34,.17],[.32,.25],[.30,.34],[.25,.43],[.20,.49],[.185,.55]],
+      r: [[.48,0],[.53,.025],[.54,.058],[.49,.10],[.39,.13],[.34,.18],[.32,.27],[.30,.35]],
+      n: [[.48,0],[.53,.025],[.54,.058],[.49,.10],[.38,.13],[.33,.18],[.31,.29],[.28,.40]],
+      b: [[.48,0],[.53,.025],[.54,.058],[.49,.10],[.38,.13],[.31,.23],[.28,.36],[.23,.50],[.185,.61]],
+      q: [[.50,0],[.55,.025],[.56,.062],[.51,.11],[.41,.14],[.35,.22],[.31,.34],[.27,.49],[.22,.63]],
+      k: [[.51,0],[.56,.025],[.57,.065],[.52,.11],[.42,.15],[.36,.24],[.31,.39],[.27,.55],[.205,.70]]
     };
+    const addRing = (radius, tube, height, material = accent) => {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 12, 48), material);
+      ring.rotation.x = Math.PI / 2;
+      return addThreeMesh(group, ring, 0, height, 0);
+    };
+    const addStudCircle = (radius, height, count, size = .035, material = inlay) => {
+      for (let i = 0; i < count; i++) {
+        const angle = i / count * Math.PI * 2;
+        const stud = new THREE.Mesh(new THREE.SphereGeometry(size, 16, 12), material);
+        addThreeMesh(group, stud, Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+      }
+    };
+    const addVerticalFlutes = (radius, height, count, material = accent) => {
+      for (let i = 0; i < count; i++) {
+        const angle = i / count * Math.PI * 2;
+        const flute = new THREE.Mesh(new THREE.BoxGeometry(.024, height, .038), material);
+        flute.rotation.y = -angle;
+        addThreeMesh(group, flute, Math.cos(angle) * radius, height / 2 + .34, Math.sin(angle) * radius);
+      }
+    };
+
     group.add(createLatheModel(THREE, profile[type], main));
+    addRing(.44, .014, .053, inlay);
+    addRing(.36, .013, .132, accent);
+    if (type !== 'p') addStudCircle(.405, .145, 10, .024, inlay);
 
     if (type === 'p') {
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(.205, .035, 12, 32), accent);
-      collar.rotation.x = Math.PI / 2;
-      addThreeMesh(group, collar, 0, .54, 0);
-      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.225, 28, 20), main), 0, .78, 0);
+      addRing(.205, .033, .55, accent);
+      addRing(.165, .012, .60, inlay);
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.225, 40, 28), main), 0, .79, 0);
+      const headBand = new THREE.Mesh(new THREE.TorusGeometry(.188, .014, 10, 36), accent);
+      headBand.rotation.x = Math.PI / 2;
+      addThreeMesh(group, headBand, 0, .79, 0);
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.052, 18, 14), inlay), 0, .90, -.19);
     }
 
     if (type === 'r') {
-      addThreeMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(.30, .33, .55, 40), main), 0, .64, 0);
-      addThreeMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(.43, .43, .11, 40), main), 0, .95, 0);
-      for (let i = 0; i < 6; i++) {
-        const angle = i / 6 * Math.PI * 2;
-        const crenel = new THREE.Mesh(new THREE.BoxGeometry(.18, .16, .15), main);
-        addThreeMesh(group, crenel, Math.cos(angle) * .30, 1.06, Math.sin(angle) * .30);
+      addThreeMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(.30, .33, .54, 64), main), 0, .64, 0);
+      addVerticalFlutes(.305, .39, 10, accent);
+      addRing(.325, .018, .42, inlay);
+      addRing(.32, .019, .84, accent);
+      addThreeMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(.43, .43, .115, 64), main), 0, .96, 0);
+      addThreeMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(.37, .40, .05, 64), inlay), 0, 1.025, 0);
+      for (let i = 0; i < 8; i++) {
+        const angle = i / 8 * Math.PI * 2;
+        const crenel = new THREE.Mesh(new THREE.BoxGeometry(.16, .17, .16), main);
+        crenel.rotation.y = -angle;
+        addThreeMesh(group, crenel, Math.cos(angle) * .31, 1.10, Math.sin(angle) * .31);
+        const rivet = new THREE.Mesh(new THREE.SphereGeometry(.034, 14, 10), inlay);
+        addThreeMesh(group, rivet, Math.cos(angle) * .315, 1.18, Math.sin(angle) * .315);
       }
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(.32, .022, 10, 32), accent);
-      ring.rotation.x = Math.PI / 2;
-      addThreeMesh(group, ring, 0, .83, 0);
     }
 
     if (type === 'n') {
+      addRing(.29, .022, .40, inlay);
       const shape = new THREE.Shape();
-      shape.moveTo(-.28, .35);
-      shape.lineTo(-.31, .72);
-      shape.quadraticCurveTo(-.34, 1.05, -.15, 1.30);
-      shape.quadraticCurveTo(.04, 1.48, .26, 1.34);
-      shape.lineTo(.33, 1.08);
-      shape.lineTo(.17, .94);
-      shape.lineTo(.31, .75);
-      shape.lineTo(.21, .43);
+      shape.moveTo(-.29, .35);
+      shape.lineTo(-.32, .70);
+      shape.quadraticCurveTo(-.36, 1.07, -.18, 1.34);
+      shape.quadraticCurveTo(.03, 1.55, .27, 1.38);
+      shape.lineTo(.35, 1.10);
+      shape.lineTo(.18, .94);
+      shape.lineTo(.33, .74);
+      shape.lineTo(.22, .43);
       shape.lineTo(.02, .36);
       shape.closePath();
-      const neck = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: .26, bevelEnabled: true, bevelSegments: 2, bevelSize: .025, bevelThickness: .025 }), main);
-      addThreeMesh(group, neck, 0, 0, -.13);
-      const mane = new THREE.Mesh(new THREE.BoxGeometry(.045, .68, .29), accent);
+      const neck = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: .29, bevelEnabled: true, bevelSegments: 3, bevelSize: .028, bevelThickness: .032 }), main);
+      addThreeMesh(group, neck, 0, 0, -.145);
+      const mane = new THREE.Mesh(new THREE.BoxGeometry(.052, .72, .32), accent);
       mane.rotation.z = -.22;
-      addThreeMesh(group, mane, -.18, .92, 0);
-      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.085, 18, 12), accent), .18, 1.24, -.15);
+      addThreeMesh(group, mane, -.19, .95, 0);
+      for (let i = 0; i < 5; i++) {
+        const maneRidge = new THREE.Mesh(new THREE.ConeGeometry(.047, .15, 10), inlay);
+        maneRidge.rotation.z = Math.PI / 2 - .22;
+        addThreeMesh(group, maneRidge, -.22 + i * .035, .62 + i * .13, 0);
+      }
+      for (const x of [-.10, .10]) {
+        const ear = new THREE.Mesh(new THREE.ConeGeometry(.073, .19, 14), main);
+        ear.rotation.z = x > 0 ? -.15 : .15;
+        addThreeMesh(group, ear, x, 1.42, -.02);
+      }
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.052, 18, 14), inlay), .19, 1.28, -.165);
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.026, 14, 10), accent), .22, 1.30, -.205);
+      const bridle = new THREE.Mesh(new THREE.TorusGeometry(.19, .014, 10, 32), inlay);
+      bridle.rotation.x = Math.PI / 2;
+      addThreeMesh(group, bridle, .06, 1.08, -.03);
     }
 
     if (type === 'b') {
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(.22, .03, 12, 32), accent);
-      collar.rotation.x = Math.PI / 2;
-      addThreeMesh(group, collar, 0, .58, 0);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(.22, 30, 22), main);
-      head.scale.set(.92, 1.22, .92);
-      addThreeMesh(group, head, 0, .86, 0);
-      const slash = new THREE.Mesh(new THREE.BoxGeometry(.055, .30, .08), accent);
+      addRing(.22, .028, .59, accent);
+      addRing(.18, .014, .65, inlay);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(.22, 44, 32), main);
+      head.scale.set(.92, 1.25, .92);
+      addThreeMesh(group, head, 0, .88, 0);
+      const halo = new THREE.Mesh(new THREE.TorusGeometry(.188, .013, 10, 36), inlay);
+      halo.rotation.x = Math.PI / 2;
+      addThreeMesh(group, halo, 0, .90, 0);
+      const slash = new THREE.Mesh(new THREE.BoxGeometry(.058, .32, .09), accent);
       slash.rotation.z = -.64;
-      addThreeMesh(group, slash, 0, .87, -.20);
+      addThreeMesh(group, slash, 0, .89, -.205);
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.045, 16, 12), inlay), -.075, 1.02, -.18);
     }
 
     if (type === 'q') {
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(.23, .03, 12, 32), accent);
-      collar.rotation.x = Math.PI / 2;
-      addThreeMesh(group, collar, 0, .64, 0);
-      addThreeMesh(group, new THREE.Mesh(new THREE.ConeGeometry(.34, .18, 8), main), 0, .82, 0);
+      addRing(.235, .031, .64, accent);
+      addRing(.19, .014, .70, inlay);
+      addThreeMesh(group, new THREE.Mesh(new THREE.CylinderGeometry(.34, .30, .09, 64), main), 0, .77, 0);
+      addThreeMesh(group, new THREE.Mesh(new THREE.ConeGeometry(.35, .17, 8), main), 0, .89, 0);
+      addRing(.275, .018, .94, inlay);
       for (let i = 0; i < 8; i++) {
         const angle = i / 8 * Math.PI * 2;
-        const bead = new THREE.Mesh(new THREE.SphereGeometry(.075, 16, 12), main);
-        addThreeMesh(group, bead, Math.cos(angle) * .28, 1.01 + (i % 2 ? .035 : 0), Math.sin(angle) * .28);
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(.065, .23, 14), main);
+        spike.rotation.z = -.24;
+        addThreeMesh(group, spike, Math.cos(angle) * .275, 1.08, Math.sin(angle) * .275);
+        const jewel = new THREE.Mesh(new THREE.SphereGeometry(.058, 18, 14), inlay);
+        addThreeMesh(group, jewel, Math.cos(angle) * .275, 1.205, Math.sin(angle) * .275);
       }
-      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.12, 20, 16), accent), 0, 1.08, 0);
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.128, 28, 20), inlay), 0, 1.14, 0);
+      addStudCircle(.18, .81, 8, .025, inlay);
     }
 
     if (type === 'k') {
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(.23, .03, 12, 32), accent);
-      collar.rotation.x = Math.PI / 2;
-      addThreeMesh(group, collar, 0, .70, 0);
-      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.18, 24, 18), main), 0, .89, 0);
-      addThreeMesh(group, new THREE.Mesh(new THREE.BoxGeometry(.09, .35, .11), main), 0, 1.18, 0);
-      addThreeMesh(group, new THREE.Mesh(new THREE.BoxGeometry(.34, .09, .11), main), 0, 1.25, 0);
+      addRing(.24, .03, .71, accent);
+      addRing(.195, .014, .77, inlay);
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.18, 36, 28), main), 0, .93, 0);
+      const crownRing = new THREE.Mesh(new THREE.TorusGeometry(.16, .019, 10, 36), inlay);
+      crownRing.rotation.x = Math.PI / 2;
+      addThreeMesh(group, crownRing, 0, 1.04, 0);
+      const crossBack = new THREE.Mesh(new THREE.BoxGeometry(.13, .40, .15), accent);
+      addThreeMesh(group, crossBack, 0, 1.24, .012);
+      const crossStem = new THREE.Mesh(new THREE.BoxGeometry(.09, .37, .11), main);
+      addThreeMesh(group, crossStem, 0, 1.25, -.06);
+      const crossArm = new THREE.Mesh(new THREE.BoxGeometry(.36, .09, .11), main);
+      addThreeMesh(group, crossArm, 0, 1.32, -.06);
+      const crossInlay = new THREE.Mesh(new THREE.BoxGeometry(.19, .032, .125), inlay);
+      addThreeMesh(group, crossInlay, 0, 1.32, -.125);
+      addThreeMesh(group, new THREE.Mesh(new THREE.SphereGeometry(.052, 18, 14), inlay), 0, 1.48, -.06);
+      addStudCircle(.20, .84, 8, .025, inlay);
     }
 
     group.scale.setScalar(.77);
