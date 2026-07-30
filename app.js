@@ -71,6 +71,10 @@
       graphicsQuality: 'balanced',
       environment: 'emerald',
       gameplayMode: 'classic',
+      storyProgress: { chapter: 1, branch: 'intro', wins: 0 },
+      storyPaused: false,
+      botCharacter: 'master',
+      botStyle: 'tactical',
       opening: 'start',
       assistLevel: 'coach',
       renderMode: '3d',
@@ -127,6 +131,10 @@
       graphicsQuality: state.graphicsQuality,
       environment: state.environment,
       gameplayMode: state.gameplayMode,
+      storyProgress: clonePlain(state.storyProgress),
+      storyPaused: state.storyPaused,
+      botCharacter: state.botCharacter,
+      botStyle: state.botStyle,
       opening: state.opening,
       assistLevel: state.assistLevel,
       renderMode: state.renderMode,
@@ -167,7 +175,11 @@
     state.difficulty = ['easy', 'normal', 'hard'].includes(snapshot.difficulty) ? snapshot.difficulty : 'normal';
     state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(snapshot.graphicsQuality) ? snapshot.graphicsQuality : 'balanced';
     state.environment = ['emerald', 'library', 'marble', 'obsidian', 'persian'].includes(snapshot.environment) ? snapshot.environment : 'emerald';
-    state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(snapshot.gameplayMode) ? snapshot.gameplayMode : 'classic';
+    state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal', 'story'].includes(snapshot.gameplayMode) ? snapshot.gameplayMode : 'classic';
+    state.storyProgress = clonePlain(snapshot.storyProgress) || { chapter: 1, branch: 'intro', wins: 0 };
+    state.storyPaused = Boolean(snapshot.storyPaused);
+    state.botCharacter = snapshot.botCharacter || 'master';
+    state.botStyle = snapshot.botStyle || 'tactical';
     state.opening = ['start', 'sicilian', 'london', 'caro'].includes(snapshot.opening) ? snapshot.opening : 'start';
     state.assistLevel = ['free', 'coach', 'master'].includes(snapshot.assistLevel) ? snapshot.assistLevel : 'coach';
     state.renderMode = snapshot.renderMode === 'classic' ? 'classic' : '3d';
@@ -353,7 +365,7 @@
   }
 
   function setGameplayMode(mode) {
-    state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(mode) ? mode : 'classic';
+    state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal', 'story'].includes(mode) ? mode : 'classic';
     updateLaunchSettingsUI();
   }
 
@@ -404,6 +416,56 @@
     }
   }
 
+  const STORY_CHARACTERS = {
+    lian: { name: 'لیان، دیده‌بان زمرد', title: 'تاکتیک‌دان مرکز', style: 'tactical', environment: 'emerald', quote: 'مرکز صفحه، قلب هر پادشاهی است.' },
+    vared: { name: 'وارد، سپر آبسیدین', title: 'مدافع قلعه', style: 'defensive', environment: 'obsidian', quote: 'هیچ دیواری بدون صبر فرو نمی‌ریزد.' },
+    azar: { name: 'آذر، بانوی مرمر', title: 'مهاجم روشن', style: 'aggressive', environment: 'marble', quote: 'گاهی بهترین دفاع، حمله‌ای بی‌پرواست.' }
+  };
+
+  const CHAPTER_ONE = {
+    intro: { title: 'چپتر یک · دروازه‌ی زمردی', copy: 'باد از میان ستون‌های تالار زمردی می‌گذرد. لیان، دیده‌بان دروازه، تخته را آماده کرده است. او باور دارد هر بازیکنی که مرکز را بگیرد، سرنوشت تالار را می‌نویسد.', branch: 'پیروزی شما، راه کتابخانه‌ی استادان را باز می‌کند.' },
+    swift: { title: 'چپتر یک · شکاف در سپر', copy: 'لیان پیش از آن‌که نگهبانان تالار فرصت کنند، شکست را پذیرفت. سرعت شما پیامی روشن برای وارد، سپر آبسیدین، فرستاد.', branch: 'مسیر شما به قلعه‌ی آبسیدین نزدیک‌تر شد.' },
+    steady: { title: 'چپتر یک · فتح آرام', copy: 'تخته پس از نبردی طولانی آرام گرفت. لیان سر فرود آورد و کلید کتابخانه‌ی استادان را به شما سپرد.', branch: 'شاخه‌ی کتابخانه و رازهای افتتاحیه باز شد.' },
+    costly: { title: 'چپتر یک · پیروزی با بهای سنگین', copy: 'تالار زمردی فتح شد، اما مهره‌های بسیاری روی سنگ‌های سرد آن جا ماندند. آذر، بانوی مرمر، از دور نبرد شما را تماشا می‌کرد.', branch: 'شاخه‌ی مرمر با نبردهای تهاجمی در انتظار است.' },
+    truce: { title: 'چپتر یک · پیمان نیمه‌شب', copy: 'هیچ شاهی سقوط نکرد. لیان پیشنهاد پیمانی کوتاه داد؛ اما وارد در سایه‌ها از این تساوی راضی نبود.', branch: 'داستان به شاخه‌ی دفاعی وارد می‌شود.' },
+    defeat: { title: 'چپتر یک · بازگشت به دروازه', copy: 'لیان دروازه را بست، اما با احترام گفت: هر شکست، نقشه‌ای برای بازگشت است.', branch: 'با یک نبرد تازه، مسیر دیگری بسازید.' }
+  };
+
+  function storyCharacter() {
+    return STORY_CHARACTERS[state.botCharacter] || STORY_CHARACTERS.lian;
+  }
+
+  function showStoryScene(branch = state.storyProgress.branch) {
+    const scene = CHAPTER_ONE[branch] || CHAPTER_ONE.intro;
+    const character = storyCharacter();
+    document.getElementById('storyEyebrow').textContent = branch === 'intro' ? 'CHAPTER I · THE EMERALD GATE' : 'CHAPTER I · THE PATH SHIFTS';
+    document.getElementById('storyTitle').textContent = scene.title;
+    document.getElementById('storyCopy').textContent = scene.copy;
+    document.getElementById('storyCharacter').innerHTML = `<div><b>${character.name}</b><small>${character.title} · «${character.quote}»</small></div>`;
+    document.getElementById('storyBranch').textContent = scene.branch;
+    document.getElementById('continueStoryButton').textContent = branch === 'intro' ? 'آغاز نبرد با لیان' : 'بازگشت به نتیجه نبرد';
+    document.getElementById('storyModal').hidden = false;
+  }
+
+  function continueStory() {
+    document.getElementById('storyModal').hidden = true;
+    state.storyPaused = false;
+    persistGame();
+    if (state.mode === 'bot' && state.turn === state.botColor) scheduleBotMove();
+  }
+
+  function advanceStory(title, description = '') {
+    if (state.gameplayMode !== 'story') return;
+    const win = title.includes('شما پیروز') || title.includes('پازل حل شد') || description.includes('شما برنده');
+    const draw = title.includes('تساوی') || title.includes('پات');
+    const fast = state.moves.length <= 28;
+    const material = materialBalance();
+    state.storyProgress.wins = (state.storyProgress.wins || 0) + (win ? 1 : 0);
+    state.storyProgress.branch = win ? (fast ? 'swift' : material > 100 ? 'steady' : 'costly') : draw ? 'truce' : 'defeat';
+    state.storyPaused = true;
+    showStoryScene(state.storyProgress.branch);
+  }
+
   function prepareGameplayMode() {
     state.mission = dailyMission();
     state.objective = null;
@@ -427,6 +489,16 @@
       state.timers = { w: 60, b: 60 };
       state.mode = 'bot';
       state.objective = { type: 'challenge', title: 'چالش برق‌آسا', text: 'برای هر طرف فقط یک دقیقه زمان وجود دارد.' };
+    } else if (state.gameplayMode === 'story') {
+      state.mode = 'bot';
+      state.storyProgress = state.storyProgress || { chapter: 1, branch: 'intro', wins: 0 };
+      state.botCharacter = 'lian';
+      state.botStyle = 'tactical';
+      state.environment = 'emerald';
+      setEnvironment('emerald');
+      state.storyPaused = true;
+      state.objective = { type: 'story', title: 'چپتر یک · دروازه زمردی', text: STORY_CHARACTERS.lian.quote };
+      state.botMessage = STORY_CHARACTERS.lian.quote;
     } else if (state.gameplayMode === 'royal') {
       state.mode = 'bot';
       const wins = readCareerStats().wins;
@@ -1305,11 +1377,13 @@
     wStatus.className = whiteChecked ? 'warning' : 'safe';
     bStatus.className = blackChecked ? 'warning' : 'safe';
     document.getElementById('lastMoveText').textContent = state.moves.length ? state.moves[state.moves.length - 1].notation : '—';
-    document.getElementById('blackPlayerName').textContent = state.playerColor === 'b' ? 'مریم' : 'استاد هوشمند';
-    document.getElementById('whitePlayerName').textContent = state.playerColor === 'w' ? 'مریم' : 'استاد هوشمند';
-    const levelName = { easy: 'آموزشی', normal: 'تاکتیکی', hard: 'استاد' }[state.difficulty];
-    document.getElementById('blackPlayerRole').textContent = state.playerColor === 'b' ? 'بازیکن انسانی' : `${levelName} · ${state.botMessage}`;
-    document.getElementById('whitePlayerRole').textContent = state.playerColor === 'w' ? 'بازیکن انسانی' : `${levelName} · ${state.botMessage}`;
+    const character = state.gameplayMode === 'story' ? storyCharacter() : null;
+    const botName = character?.name || 'استاد هوشمند';
+    const botRole = character ? character.title : ({ easy: 'آموزشی', normal: 'تاکتیکی', hard: 'استاد' }[state.difficulty]);
+    document.getElementById('blackPlayerName').textContent = state.playerColor === 'b' ? 'مریم' : botName;
+    document.getElementById('whitePlayerName').textContent = state.playerColor === 'w' ? 'مریم' : botName;
+    document.getElementById('blackPlayerRole').textContent = state.playerColor === 'b' ? 'بازیکن انسانی' : `${botRole} · ${state.botMessage}`;
+    document.getElementById('whitePlayerRole').textContent = state.playerColor === 'w' ? 'بازیکن انسانی' : `${botRole} · ${state.botMessage}`;
     const blackAvatar = document.getElementById('blackAvatar');
     const whiteAvatar = document.getElementById('whiteAvatar');
     if (state.playerColor === 'b') {
@@ -1507,6 +1581,7 @@
     document.getElementById('battleTrail').innerHTML = battleTrailText();
     recordCompletedGame(title, description);
     endgameModal.hidden = false;
+    advanceStory(title, description);
     persistGame();
     renderStatus();
   }
@@ -1595,7 +1670,7 @@
   }
 
   function handleSquareTarget(target) {
-    if (!target || !state.gameStarted || state.gameOver || state.pendingPromotion || state.botThinking) return;
+    if (!target || !state.gameStarted || state.storyPaused || state.gameOver || state.pendingPromotion || state.botThinking) return;
     const selectedMove = state.legalMoves.find(move => move.y === target.y && move.x === target.x);
     if (state.selected && selectedMove) {
       if (state.mode === 'puzzle' && state.objective?.type === 'puzzle') {
@@ -1671,6 +1746,7 @@
     state.renderMode = renderMode;
     setEnvironment(environment);
     setTimeControl(timeControl);
+    prepareGameplayMode();
     state.gameStarted = true;
     state.resumable = true;
     state.autoSave = true;
@@ -1680,6 +1756,8 @@
     persistGame();
     render();
     showToast(state.mode === 'bot' ? 'نبرد با استاد هوشمند آماده است؛ سفید آغاز می‌کند.' : 'بازی تازه آماده است؛ سفید آغاز می‌کند.');
+    if (state.gameplayMode === 'story' && state.storyPaused) showStoryScene('intro');
+    else if (state.mode === 'bot' && state.turn === state.botColor) scheduleBotMove();
   }
 
   function resignGame() {
@@ -1735,6 +1813,10 @@
         graphicsQuality: state.graphicsQuality,
         environment: state.environment,
         gameplayMode: state.gameplayMode,
+        storyProgress: state.storyProgress,
+        storyPaused: state.storyPaused,
+        botCharacter: state.botCharacter,
+        botStyle: state.botStyle,
         opening: state.opening,
         assistLevel: state.assistLevel,
         renderMode: state.renderMode,
@@ -1788,7 +1870,11 @@
       state.difficulty = ['easy', 'normal', 'hard'].includes(saved.difficulty) ? saved.difficulty : 'normal';
       state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(saved.graphicsQuality) ? saved.graphicsQuality : 'balanced';
       state.environment = ['emerald', 'library', 'marble', 'obsidian', 'persian'].includes(saved.environment) ? saved.environment : 'emerald';
-      state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(saved.gameplayMode) ? saved.gameplayMode : 'classic';
+      state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal', 'story'].includes(saved.gameplayMode) ? saved.gameplayMode : 'classic';
+      state.storyProgress = saved.storyProgress || { chapter: 1, branch: 'intro', wins: 0 };
+      state.storyPaused = Boolean(saved.storyPaused);
+      state.botCharacter = saved.botCharacter || 'master';
+      state.botStyle = saved.botStyle || 'tactical';
       state.opening = ['start', 'sicilian', 'london', 'caro'].includes(saved.opening) ? saved.opening : 'start';
       state.assistLevel = ['free', 'coach', 'master'].includes(saved.assistLevel) ? saved.assistLevel : 'coach';
       state.renderMode = saved.renderMode === 'classic' ? 'classic' : '3d';
@@ -1888,6 +1974,8 @@
       score += isKingInCheck(opposite(state.botColor), nextBoard) ? 125 : 0;
       score += choice.move.special?.startsWith('castle') ? 35 : 0;
       score += (3.5 - Math.abs(choice.move.x - 3.5) + 3.5 - Math.abs(choice.move.y - 3.5)) * 3;
+      if (state.botStyle === 'aggressive') score += (captured ? 80 : 0) + (isKingInCheck(opposite(state.botColor), nextBoard) ? 90 : 0);
+      if (state.botStyle === 'defensive') score += choice.move.special?.startsWith('castle') ? 75 : 0;
       if (state.difficulty === 'hard') score += evaluatePositionForBot(nextBoard) * .17;
       score += Math.random() * (state.difficulty === 'hard' ? 3 : 18);
       return { ...choice, score };
@@ -2070,7 +2158,8 @@
     document.body.classList.remove('menu-open');
     render();
     showToast(state.moves.length ? 'نبرد با استاد هوشمند ادامه پیدا کرد.' : `نبرد آغاز شد؛ شما با مهره‌های ${state.playerColor === 'w' ? 'سفید' : 'سیاه'} بازی می‌کنید.`);
-    if (state.turn === state.botColor) scheduleBotMove();
+    if (state.gameplayMode === 'story' && state.storyPaused) showStoryScene(state.storyProgress.branch || 'intro');
+    else if (state.turn === state.botColor) scheduleBotMove();
   }
 
   function toggleFocusMode() {
@@ -2094,7 +2183,7 @@
   }
 
   function tickClock() {
-    if (state.timeControl === 'none' || !state.gameStarted || document.body.classList.contains('menu-open') || state.gameOver || state.pendingPromotion) return;
+    if (state.timeControl === 'none' || !state.gameStarted || state.storyPaused || document.body.classList.contains('menu-open') || state.gameOver || state.pendingPromotion) return;
     state.timers[state.turn] -= 1;
     if (state.timers[state.turn] <= 0) {
       state.timers[state.turn] = 0;
@@ -2145,6 +2234,7 @@
     document.getElementById('shareBattleButton').addEventListener('click', shareBattleSnapshot);
     document.getElementById('reviewBattleButton').addEventListener('click', openBattleReview);
     document.getElementById('closeReview').addEventListener('click', closeBattleReview);
+    document.getElementById('continueStoryButton').addEventListener('click', continueStory);
 
     document.getElementById('closePromotion').addEventListener('click', () => {
       state.pendingPromotion = null;
