@@ -226,7 +226,7 @@
           const target = board[targetY][targetX];
           if (!target) moves.push({ y: targetY, x: targetX, special: null });
           else {
-            if (target.color !== piece.color) moves.push({ y: targetY, x: targetX, special: null });
+            if (target.color !== piece.color && target.type !== 'k') moves.push({ y: targetY, x: targetX, special: null });
             break;
           }
           targetY += dy;
