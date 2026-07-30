@@ -378,6 +378,8 @@
       (state.mission.id === 'center' && atCenter);
     if (complete) {
       state.mission.complete = true;
+      const missionNames = { castle: 'قلعه‌ی امن', check: 'فشار بر شاه', 'capture-queen': 'شکار وزیر', center: 'فرمانروای مرکز' };
+      unlockAchievement(`mission-${state.mission.id}`, missionNames[state.mission.id]);
       showToast('ماموریت امروز کامل شد ✦');
       updateMissionUI();
     }
@@ -1303,6 +1305,8 @@
       whiteAvatar.textContent = 'م';
     }
     updateColorChoiceUI();
+    updateCareerStatsUI();
+    document.body.classList.toggle('focus-active', state.focused && !document.body.classList.contains('menu-open'));
     document.getElementById('focusLabel').textContent = state.focused ? 'روشن' : 'خاموش';
     document.getElementById('soundLabel').textContent = soundOn ? 'روشن' : 'خاموش';
     document.getElementById('themeLabel').textContent = document.body.classList.contains('alt-light') ? 'کهربایی' : 'زمردی';
@@ -1347,7 +1351,7 @@
   const CAREER_KEY = 'shahmat-career-v1';
 
   function readCareerStats() {
-    if (typeof localStorage === 'undefined') return { wins: 0, losses: 0, draws: 0, streak: 0, history: [] };
+    if (typeof localStorage === 'undefined') return { wins: 0, losses: 0, draws: 0, streak: 0, history: [], achievements: [] };
     try {
       const saved = JSON.parse(localStorage.getItem(CAREER_KEY));
       return {
@@ -1355,9 +1359,10 @@
         losses: Number(saved?.losses) || 0,
         draws: Number(saved?.draws) || 0,
         streak: Number(saved?.streak) || 0,
-        history: Array.isArray(saved?.history) ? saved.history.slice(0, 20) : []
+        history: Array.isArray(saved?.history) ? saved.history.slice(0, 20) : [],
+        achievements: Array.isArray(saved?.achievements) ? saved.achievements : []
       };
-    } catch { return { wins: 0, losses: 0, draws: 0, streak: 0, history: [] }; }
+    } catch { return { wins: 0, losses: 0, draws: 0, streak: 0, history: [], achievements: [] }; }
   }
 
   function updateCareerStatsUI() {
@@ -1366,6 +1371,32 @@
     set('careerWins', stats.wins);
     set('careerLosses', stats.losses);
     set('careerDraws', stats.draws);
+    updateRoyalMap();
+  }
+
+  const ROYAL_STAGES = ['تالار زمردی', 'کتابخانه استادان', 'مرمر سلطنتی', 'قلعه آبسیدین', 'تالار ایرانی'];
+
+  function updateRoyalMap() {
+    const stats = readCareerStats();
+    const stage = Math.min(4, Math.floor(stats.wins / 3));
+    document.querySelectorAll('[data-stage]').forEach(node => {
+      const index = Number(node.dataset.stage);
+      node.classList.toggle('unlocked', index <= stage);
+      node.classList.toggle('active', index === stage);
+    });
+    const status = document.getElementById('royalMapStatus');
+    const text = document.getElementById('achievementText');
+    if (status) status.textContent = ROYAL_STAGES[stage];
+    if (text) text.textContent = stats.achievements.length ? `دستاوردها: ${stats.achievements.length} · مسیر بعدی با ${Math.max(0, 3 - (stats.wins % 3))} برد` : 'با بردهای بیشتر، تالارهای تازه را فتح کنید.';
+  }
+
+  function unlockAchievement(id, title) {
+    const stats = readCareerStats();
+    if (stats.achievements.some(item => item.id === id)) return;
+    stats.achievements.push({ id, title, date: Date.now() });
+    if (typeof localStorage !== 'undefined') localStorage.setItem(CAREER_KEY, JSON.stringify(stats));
+    showToast(`دستاورد جدید: ${title} ✦`);
+    updateRoyalMap();
   }
 
   function materialBalance() {
@@ -1397,6 +1428,8 @@
     else { stats.losses++; stats.streak = 0; }
     stats.history.unshift({ title, date: Date.now(), moves: state.moves.length, color: state.playerColor, fen: toFen() });
     stats.history = stats.history.slice(0, 20);
+    if (win && state.playerColor === 'b' && !stats.achievements.some(item => item.id === 'black-victory')) stats.achievements.push({ id: 'black-victory', title: 'فاتح آبسیدین', date: Date.now() });
+    if (win && stats.streak >= 5 && !stats.achievements.some(item => item.id === 'streak-five')) stats.achievements.push({ id: 'streak-five', title: 'پنج پیروزی پیاپی', date: Date.now() });
     if (typeof localStorage !== 'undefined') localStorage.setItem(CAREER_KEY, JSON.stringify(stats));
     updateCareerStatsUI();
   }
@@ -1517,9 +1550,14 @@
     if (piece.color === state.botColor) state.botMessage = makeBotFeedback(piece, move, captured, enemyInCheck);
     else if (captured) state.botMessage = 'تبادل مهمی بود؛ پاسخ من در راه است.';
     checkMission(piece, move, captured, enemyInCheck);
+    if (piece.color === state.playerColor && move.special?.startsWith('castle')) unlockAchievement('castle', 'نگهبان شاه');
+    if (piece.color === state.playerColor && captured?.type === 'q') unlockAchievement('queen-hunter', 'شکارچی وزیر');
     if (captured || enemyInCheck || promotion) state.directorFocus = { x: move.x, y: move.y, until: Date.now() + 1150 };
     state.moves.push({ notation, color: piece.color });
     playMoveSound(captured ? 'capture' : 'move');
+    if (captured) haptic([12, 35, 18]);
+    else if (enemyInCheck) haptic([20, 35, 20]);
+    else haptic(8);
     persistGame();
     render();
     if (gameEnd) endGame(gameEnd.title, gameEnd.description);
@@ -1547,6 +1585,7 @@
           state.selected = null;
           state.legalMoves = [];
           render();
+          haptic([8, 25, 8]);
           showToast('این مسیر پازل نیست؛ یک بار دیگر فکر کنید.');
           return;
         }
@@ -1849,6 +1888,10 @@
       const promotion = choice.move.y === 0 || choice.move.y === 7 ? 'q' : null;
       completeMove(choice.from, choice.move, promotion);
     }, 520);
+  }
+
+  function haptic(pattern = 12) {
+    try { navigator.vibrate?.(pattern); } catch { /* Haptics are optional. */ }
   }
 
   function showToast(message) {
