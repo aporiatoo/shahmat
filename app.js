@@ -80,7 +80,7 @@
       result: '',
       resultDescription: '',
       flipped: false,
-      focused: false,
+      focused: true,
       hint: null,
       pendingPromotion: null
     };
@@ -724,7 +724,7 @@
       scenery.add(line);
     });
     for (const x of [-4.33, 4.33]) for (const z of [-4.33, 4.33]) {
-      const corner = new THREE.Mesh(new THREE.CylinderGeometry(.17, .20, .13, 24), materials.frameInlay);
+      const corner = new THREE.Mesh(new THREE.CylinderGeomettry(.17, .20, .13, 24), materials.frameInlay);
       corner.position.set(x, .14, z);
       corner.castShadow = true;
       scenery.add(corner);
@@ -1347,7 +1347,7 @@
       state.botColor = opposite(state.playerColor);
       state.colorSelectionChanged = false;
       state.flipped = false;
-      state.focused = Boolean(saved.focused);
+      state.focused = saved.focused !== false;
       state.botThinking = false;
       state.autoSave = saved.autoSave !== false;
       state.gameOver = Boolean(saved.gameOver);
