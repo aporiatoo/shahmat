@@ -418,36 +418,158 @@
 
   const STORY_CHARACTERS = {
     lian: { name: 'لیان، دیده‌بان زمرد', title: 'تاکتیک‌دان مرکز', style: 'tactical', environment: 'emerald', quote: 'مرکز صفحه، قلب هر پادشاهی است.' },
+    sahar: { name: 'سحر، حافظه‌ی کتابخانه', title: 'استاد افتتاحیه', style: 'positional', environment: 'library', quote: 'هر حرکت خوب، سایه‌ای از حرکت پیشین دارد.' },
+    azar: { name: 'آذر، بانوی مرمر', title: 'مهاجم روشن', style: 'aggressive', environment: 'marble', quote: 'گاهی بهترین دفاع، حمله‌ای بی‌پرواست.' },
     vared: { name: 'وارد، سپر آبسیدین', title: 'مدافع قلعه', style: 'defensive', environment: 'obsidian', quote: 'هیچ دیواری بدون صبر فرو نمی‌ریزد.' },
-    azar: { name: 'آذر، بانوی مرمر', title: 'مهاجم روشن', style: 'aggressive', environment: 'marble', quote: 'گاهی بهترین دفاع، حمله‌ای بی‌پرواست.' }
+    shahbanou: { name: 'شهبانو، نگهبان تالار ایرانی', title: 'باس نهایی', style: 'tactical', environment: 'persian', quote: 'تاج را کسی می‌برد که در سکوت هم نقشه می‌کشد.' }
   };
 
-  const CHAPTER_ONE = {
-    intro: { title: 'چپتر یک · دروازه‌ی زمردی', copy: 'باد از میان ستون‌های تالار زمردی می‌گذرد. لیان، دیده‌بان دروازه، تخته را آماده کرده است. او باور دارد هر بازیکنی که مرکز را بگیرد، سرنوشت تالار را می‌نویسد.', branch: 'پیروزی شما، راه کتابخانه‌ی استادان را باز می‌کند.' },
-    swift: { title: 'چپتر یک · شکاف در سپر', copy: 'لیان پیش از آن‌که نگهبانان تالار فرصت کنند، شکست را پذیرفت. سرعت شما پیامی روشن برای وارد، سپر آبسیدین، فرستاد.', branch: 'مسیر شما به قلعه‌ی آبسیدین نزدیک‌تر شد.' },
-    steady: { title: 'چپتر یک · فتح آرام', copy: 'تخته پس از نبردی طولانی آرام گرفت. لیان سر فرود آورد و کلید کتابخانه‌ی استادان را به شما سپرد.', branch: 'شاخه‌ی کتابخانه و رازهای افتتاحیه باز شد.' },
-    costly: { title: 'چپتر یک · پیروزی با بهای سنگین', copy: 'تالار زمردی فتح شد، اما مهره‌های بسیاری روی سنگ‌های سرد آن جا ماندند. آذر، بانوی مرمر، از دور نبرد شما را تماشا می‌کرد.', branch: 'شاخه‌ی مرمر با نبردهای تهاجمی در انتظار است.' },
-    truce: { title: 'چپتر یک · پیمان نیمه‌شب', copy: 'هیچ شاهی سقوط نکرد. لیان پیشنهاد پیمانی کوتاه داد؛ اما وارد در سایه‌ها از این تساوی راضی نبود.', branch: 'داستان به شاخه‌ی دفاعی وارد می‌شود.' },
-    defeat: { title: 'چپتر یک · بازگشت به دروازه', copy: 'لیان دروازه را بست، اما با احترام گفت: هر شکست، نقشه‌ای برای بازگشت است.', branch: 'با یک نبرد تازه، مسیر دیگری بسازید.' }
-  };
+  const STORY_CHAPTERS = [
+    { id: 1, title: 'دروازه‌ی زمردی', character: 'lian', difficulty: 'normal', dialogue: [
+      { speaker: 'راوی', text: 'باد از میان ستون‌های تالار زمردی می‌گذرد. دروازه‌ی نخست تنها با یک نبرد گشوده می‌شود.' },
+      { speaker: 'لیان', text: 'من لیان هستم؛ دیده‌بان این تالار. اگر مرکز را بگیری، شاید اجازه‌ی عبور پیدا کنی.' },
+      { speaker: 'راوی', text: 'دو راه پیش روی توست؛ با جسارت قلب تخته را بگیر یا با صبر، سپر خود را بساز.' }
+    ], choices: [ { id: 'center', label: 'مرکز را می‌گیرم', style: 'tactical' }, { id: 'patience', label: 'با صبر بازی می‌کنم', style: 'defensive' } ] },
+    { id: 2, title: 'کتابخانه‌ی استادان', character: 'sahar', difficulty: 'normal', dialogue: [
+      { speaker: 'راوی', text: 'قفسه‌های بلند کتابخانه، هزار افتتاحیه‌ی فراموش‌شده را در خود پنهان کرده‌اند.' },
+      { speaker: 'سحر', text: 'در این‌جا بردن کافی نیست؛ باید بفهمی چرا اولین حرکت، آخرین حرکت را شکل می‌دهد.' }
+    ] },
+    { id: 3, title: 'تالار مرمر', character: 'azar', difficulty: 'hard', dialogue: [
+      { speaker: 'راوی', text: 'مرمر زیر نور طلایی می‌درخشد، اما هر انعکاس می‌تواند تله‌ای برای شاه باشد.' },
+      { speaker: 'آذر', text: 'من به عقب‌نشینی باور ندارم. آیا تو هم جرئت قربانی‌کردن داری؟' }
+    ] },
+    { id: 4, title: 'قلعه‌ی آبسیدین', character: 'vared', difficulty: 'hard', dialogue: [
+      { speaker: 'راوی', text: 'دیوارهای سیاه قلعه، زمان را می‌بلعند. این‌جا هر ثانیه یک مهره است.' },
+      { speaker: 'وارد', text: 'اگر نتوانی از شاه خود محافظت کنی، هیچ حمله‌ای تو را نجات نمی‌دهد.' }
+    ] },
+    { id: 5, title: 'تالار ایرانی', character: 'shahbanou', difficulty: 'hard', dialogue: [
+      { speaker: 'راوی', text: 'نقش‌های فیروزه‌ای تالار، مسیر تمام نبردهای گذشته را بازتاب می‌دهند.' },
+      { speaker: 'شهبانو', text: 'تو از پنج دروازه گذشتی. اکنون ببین آیا شایسته‌ی تاج نهایی هستی یا نه.' }
+    ] }
+  ];
 
-  function storyCharacter() {
-    return STORY_CHARACTERS[state.botCharacter] || STORY_CHARACTERS.lian;
+  function storyState() {
+    const progress = state.storyProgress || {};
+    if (!Array.isArray(progress.completed)) progress.completed = [];
+    progress.unlocked = Math.max(1, Number(progress.unlocked) || 1);
+    progress.currentChapter = Math.min(5, Math.max(1, Number(progress.currentChapter || progress.chapter) || 1));
+    progress.branch = progress.branch || 'intro';
+    progress.wins = Number(progress.wins) || 0;
+    state.storyProgress = progress;
+    return progress;
   }
 
-  function showStoryScene(branch = state.storyProgress.branch) {
-    const scene = CHAPTER_ONE[branch] || CHAPTER_ONE.intro;
+  function storyChapter(id = storyState().currentChapter) {
+    return STORY_CHAPTERS.find(chapter => chapter.id === id) || STORY_CHAPTERS[0];
+  }
+
+  function storyCharacter() {
+    const chapter = storyChapter();
+    return STORY_CHARACTERS[state.botCharacter] || STORY_CHARACTERS[chapter.character] || STORY_CHARACTERS.lian;
+  }
+
+  function renderStoryHub() {
+    const progress = storyState();
+    const list = document.getElementById('storyChapterList');
+    list.innerHTML = STORY_CHAPTERS.map(chapter => {
+      const unlocked = chapter.id <= progress.unlocked;
+      const done = progress.completed.includes(chapter.id);
+      return `<article class="chapter-card ${unlocked ? '' : 'locked'}"><span class="chapter-number">${chapter.id}</span><span><b>${chapter.title}${done ? ' · ✓' : ''}</b><small>${STORY_CHARACTERS[chapter.character].name} · ${STORY_CHARACTERS[chapter.character].title}</small></span><button type="button" data-story-chapter="${chapter.id}" ${unlocked ? '' : 'disabled'}>${unlocked ? (done ? 'دوباره' : 'شروع') : 'قفل'}</button></article>`;
+    }).join('');
+    list.querySelectorAll('[data-story-chapter]').forEach(button => button.addEventListener('click', () => startStoryChapter(Number(button.dataset.storyChapter))));
+  }
+
+  function openStoryHub() {
+    renderStoryHub();
+    document.getElementById('storyHubModal').hidden = false;
+  }
+
+  function closeStoryHub() {
+    document.getElementById('storyHubModal').hidden = true;
+  }
+
+  function startStoryChapter(id) {
+    const progress = storyState();
+    if (id > progress.unlocked) { showToast('برای ورود به این چپتر، چپتر پیشین را کامل کنید.'); return; }
+    const config = { playerColor: state.playerColor, timeControl: state.timeControl, difficulty: state.difficulty, graphicsQuality: state.graphicsQuality, renderMode: state.renderMode, assistLevel: state.assistLevel };
+    resetState();
+    state.playerColor = config.playerColor;
+    state.startedPlayerColor = config.playerColor;
+    state.botColor = opposite(config.playerColor);
+    state.timeControl = config.timeControl;
+    state.difficulty = config.difficulty;
+    state.graphicsQuality = config.graphicsQuality;
+    state.renderMode = config.renderMode;
+    state.assistLevel = config.assistLevel;
+    state.gameplayMode = 'story';
+    state.storyProgress = progress;
+    state.storyProgress.currentChapter = id;
+    state.resumable = false;
+    closeStoryHub();
+    startSoloGame();
+  }
+
+  function activeStoryLines() {
+    const chapter = storyChapter();
+    if (state.storyDialogue?.phase === 'result') {
+      const branch = storyState().branch;
+      const result = {
+        swift: ['راوی', 'لیان پیش از آن‌که نگهبانان فرصت کنند، شکست را پذیرفت. راه قلعه‌ی آبسیدین در افق لرزید.'],
+        steady: ['لیان', 'نبردی سنجیده بود. کلید کتابخانه‌ی استادان از آن توست.'],
+        costly: ['آذر', 'پیروز شدی، اما مرمر بهای این پیروزی را به خاطر خواهد سپرد.'],
+        truce: ['وارد', 'تساوی، دیواری ناپایدار است. در فصل بعد دوباره روبه‌رو می‌شویم.'],
+        defeat: ['لیان', 'شکست پایان مسیر نیست؛ نقشه‌ی بازگشتت را دقیق‌تر کن.']
+      }[branch] || ['راوی', 'داستان هنوز در حرکت است.'];
+      return [{ speaker: result[0], text: result[1] }];
+    }
+    return chapter.dialogue;
+  }
+
+  function showStoryDialogue() {
+    const progress = storyState();
+    const chapter = storyChapter();
+    state.storyDialogue ||= { phase: 'intro', index: 0 };
+    const lines = activeStoryLines();
+    const index = Math.min(state.storyDialogue.index, lines.length - 1);
+    const line = lines[index];
     const character = storyCharacter();
-    document.getElementById('storyEyebrow').textContent = branch === 'intro' ? 'CHAPTER I · THE EMERALD GATE' : 'CHAPTER I · THE PATH SHIFTS';
-    document.getElementById('storyTitle').textContent = scene.title;
-    document.getElementById('storyCopy').textContent = scene.copy;
-    document.getElementById('storyCharacter').innerHTML = `<div><b>${character.name}</b><small>${character.title} · «${character.quote}»</small></div>`;
-    document.getElementById('storyBranch').textContent = scene.branch;
-    document.getElementById('continueStoryButton').textContent = branch === 'intro' ? 'آغاز نبرد با لیان' : 'بازگشت به نتیجه نبرد';
+    const choices = document.getElementById('storyChoices');
+    document.getElementById('storyEyebrow').textContent = `CHAPTER ${chapter.id} · ${chapter.title.toUpperCase()}`;
+    document.getElementById('storyTitle').textContent = chapter.title;
+    document.getElementById('storyCopy').textContent = line.text;
+    document.getElementById('storyCharacter').innerHTML = `<div><b>${line.speaker === 'راوی' ? character.name : line.speaker}</b><small>${character.title} · «${character.quote}»</small></div>`;
+    document.getElementById('storyBranch').textContent = state.storyDialogue.phase === 'result' ? 'نتیجه‌ی این نبرد، مسیر فصل بعد را شکل می‌دهد.' : `گفت‌وگو ${index + 1} از ${lines.length}`;
+    choices.innerHTML = '';
+    const lastLine = index === lines.length - 1;
+    if (lastLine && state.storyDialogue.phase === 'intro' && chapter.choices?.length) {
+      choices.innerHTML = chapter.choices.map(choice => `<button type="button" data-story-choice="${choice.id}">${choice.label}</button>`).join('');
+      choices.querySelectorAll('[data-story-choice]').forEach(button => button.addEventListener('click', () => chooseStoryPath(button.dataset.storyChoice)));
+      document.getElementById('continueStoryButton').hidden = true;
+    } else {
+      document.getElementById('continueStoryButton').hidden = false;
+      document.getElementById('continueStoryButton').textContent = lastLine ? (state.storyDialogue.phase === 'result' ? 'بازگشت به نتیجه نبرد' : 'آغاز نبرد') : 'ادامه روایت';
+    }
     document.getElementById('storyModal').hidden = false;
   }
 
+  function chooseStoryPath(choiceId) {
+    const chapter = storyChapter();
+    const choice = chapter.choices?.find(choice => choice.id === choiceId);
+    if (!choice) return;
+    storyState().choice = choice.id;
+    state.botStyle = choice.style;
+    document.getElementById('storyChoices').innerHTML = '';
+    document.getElementById('continueStoryButton').hidden = false;
+    document.getElementById('continueStoryButton').textContent = 'آغاز نبرد';
+  }
+
   function continueStory() {
+    const lines = activeStoryLines();
+    if (state.storyDialogue && state.storyDialogue.index < lines.length - 1) {
+      state.storyDialogue.index++;
+      showStoryDialogue();
+      return;
+    }
     document.getElementById('storyModal').hidden = true;
     state.storyPaused = false;
     persistGame();
@@ -456,14 +578,22 @@
 
   function advanceStory(title, description = '') {
     if (state.gameplayMode !== 'story') return;
+    const progress = storyState();
+    const chapter = storyChapter();
     const win = title.includes('شما پیروز') || title.includes('پازل حل شد') || description.includes('شما برنده');
     const draw = title.includes('تساوی') || title.includes('پات');
     const fast = state.moves.length <= 28;
     const material = materialBalance();
-    state.storyProgress.wins = (state.storyProgress.wins || 0) + (win ? 1 : 0);
-    state.storyProgress.branch = win ? (fast ? 'swift' : material > 100 ? 'steady' : 'costly') : draw ? 'truce' : 'defeat';
+    progress.wins += win ? 1 : 0;
+    progress.branch = win ? (fast ? 'swift' : material > 100 ? 'steady' : 'costly') : draw ? 'truce' : 'defeat';
+    if (win && !progress.completed.includes(chapter.id)) {
+      progress.completed.push(chapter.id);
+      progress.unlocked = Math.max(progress.unlocked, Math.min(5, chapter.id + 1));
+      unlockAchievement(`chapter-${chapter.id}`, `فاتح چپتر ${chapter.id}`);
+    }
+    state.storyDialogue = { phase: 'result', index: 0 };
     state.storyPaused = true;
-    showStoryScene(state.storyProgress.branch);
+    showStoryDialogue();
   }
 
   function prepareGameplayMode() {
@@ -491,14 +621,17 @@
       state.objective = { type: 'challenge', title: 'چالش برق‌آسا', text: 'برای هر طرف فقط یک دقیقه زمان وجود دارد.' };
     } else if (state.gameplayMode === 'story') {
       state.mode = 'bot';
-      state.storyProgress = state.storyProgress || { chapter: 1, branch: 'intro', wins: 0 };
-      state.botCharacter = 'lian';
-      state.botStyle = 'tactical';
-      state.environment = 'emerald';
-      setEnvironment('emerald');
+      const chapter = storyChapter();
+      const character = STORY_CHARACTERS[chapter.character];
+      state.botCharacter = chapter.character;
+      state.botStyle = storyState().choice === 'patience' ? 'defensive' : character.style;
+      state.difficulty = chapter.difficulty;
+      state.environment = character.environment;
+      setEnvironment(character.environment);
       state.storyPaused = true;
-      state.objective = { type: 'story', title: 'چپتر یک · دروازه زمردی', text: STORY_CHARACTERS.lian.quote };
-      state.botMessage = STORY_CHARACTERS.lian.quote;
+      state.storyDialogue = { phase: 'intro', index: 0 };
+      state.objective = { type: 'story', title: `چپتر ${chapter.id} · ${chapter.title}`, text: character.quote };
+      state.botMessage = character.quote;
     } else if (state.gameplayMode === 'royal') {
       state.mode = 'bot';
       const wins = readCareerStats().wins;
@@ -1756,7 +1889,7 @@
     persistGame();
     render();
     showToast(state.mode === 'bot' ? 'نبرد با استاد هوشمند آماده است؛ سفید آغاز می‌کند.' : 'بازی تازه آماده است؛ سفید آغاز می‌کند.');
-    if (state.gameplayMode === 'story' && state.storyPaused) showStoryScene('intro');
+    if (state.gameplayMode === 'story' && state.storyPaused) showStoryDialogue();
     else if (state.mode === 'bot' && state.turn === state.botColor) scheduleBotMove();
   }
 
@@ -2158,7 +2291,7 @@
     document.body.classList.remove('menu-open');
     render();
     showToast(state.moves.length ? 'نبرد با استاد هوشمند ادامه پیدا کرد.' : `نبرد آغاز شد؛ شما با مهره‌های ${state.playerColor === 'w' ? 'سفید' : 'سیاه'} بازی می‌کنید.`);
-    if (state.gameplayMode === 'story' && state.storyPaused) showStoryScene(state.storyProgress.branch || 'intro');
+    if (state.gameplayMode === 'story' && state.storyPaused) showStoryDialogue();
     else if (state.turn === state.botColor) scheduleBotMove();
   }
 
@@ -2199,6 +2332,8 @@
   function wireControls() {
     boardEl.addEventListener('click', handleSquareClick);
     document.getElementById('startBotButton').addEventListener('click', startSoloGame);
+    document.getElementById('storyHubButton').addEventListener('click', openStoryHub);
+    document.getElementById('closeStoryHub').addEventListener('click', closeStoryHub);
     document.querySelectorAll('[data-player-color]').forEach(button => button.addEventListener('click', () => selectPlayerColor(button.dataset.playerColor)));
     document.getElementById('difficultySelect').addEventListener('change', event => setDifficulty(event.target.value));
     document.getElementById('timeControlSelect').addEventListener('change', event => setTimeControl(event.target.value));
