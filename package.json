@@ -1,0 +1,28 @@
+{
+  "name": "shahmat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aporiatoo/shahmat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aporiatoo/shahmat/issues"
+  },
+  "homepage": "https://github.com/aporiatoo/shahmat#readme",
+  "dependencies": {
+    "@types/three": "^0.185.1",
+    "chess.js": "^1.4.0",
+    "three": "^0.185.1",
+    "vite": "^8.2.0"
+  }
+}
