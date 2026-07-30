@@ -68,74 +68,76 @@ body.alt-light { --board-light: #cfbc9e; --board-dark: #775542; background: radi
 
 /* Viewport-fit game layout: keep the complete match scene on one screen. */
 :root {
-  --game-chrome: 290px;
-  --square-size: min(80px, 7.4vw, max(34px, calc((100dvh - var(--game-chrome)) / 8)));
+  --game-chrome: 180px;
+  --square-size: min(108px, 9vw, max(36px, calc((100dvh - var(--game-chrome)) / 8)));
 }
 html, body { height: 100%; }
 html { overflow: hidden; }
 body:not(.menu-open) { overflow: hidden; }
-.topbar { height: 64px; }
+.topbar { height: 56px; }
 .app-shell {
-  height: calc(100vh - 64px);
-  height: calc(100dvh - 64px);
+  max-width: 960px;
+  height: calc(100vh - 56px);
+  height: calc(100dvh - 56px);
   min-height: 0;
   overflow: hidden;
-  padding: 13px 20px 11px;
+  padding: 5px 20px;
   display: flex;
   align-items: center;
 }
 .board-area { max-height: 100%; display: flex; flex: 1 1 auto; flex-direction: column; justify-content: center; }
-.board-heading { min-height: 42px; flex: 0 0 42px; }
-.player-rail { min-height: 44px; padding: 5px 10px; }
-.dark-rail { margin-bottom: 5px; }
-.light-rail { margin-top: 7px; }
-.avatar { width: 31px; height: 31px; border-radius: 9px; }
-.rail-details strong { font-size: 10px; }
-.rail-details small { font-size: 7px; }
-.clock { min-width: 72px; height: 29px; font-size: 15px; }
-.board-stage { margin-top: 0; padding-top: 5px; padding-bottom: 14px; flex: 0 0 auto; }
-.board-footer { margin-top: 7px; min-height: 31px; }
-.turn-piece { width: 27px; height: 27px; font-size: 21px; }
-.turn-guide b { font-size: 10px; }
-.turn-guide small { font-size: 8px; }
+.board-heading { min-height: 25px; flex: 0 0 25px; align-items: center; }
+.board-heading .eyebrow { display: none; }
+.board-heading h2 { font-size: 17px; }
+.player-rail { min-height: 32px; padding: 3px 8px; border-radius: 8px; }
+.dark-rail { margin-bottom: 2px; }
+.light-rail { margin-top: 2px; }
+.avatar { width: 24px; height: 24px; border-radius: 7px; }
+.rail-details strong { font-size: 9px; }
+.rail-details small { display: none; }
+.clock { min-width: 64px; height: 24px; font-size: 13px; }
+.board-stage { margin-top: 0; padding-top: 2px; padding-bottom: 8px; flex: 0 0 auto; }
+.board-footer { display: none; }
+.game-menu { top: 66px; }
 
 @media (max-width: 700px) {
   :root {
-    --game-chrome: 255px;
-    --square-size: min(calc((100vw - 52px) / 8), max(28px, calc((100dvh - var(--game-chrome)) / 8)));
+    --game-chrome: 165px;
+    --square-size: min(calc((100vw - 44px) / 8), max(28px, calc((100dvh - var(--game-chrome)) / 8)));
   }
-  .topbar { height: 59px; }
+  .topbar { height: 54px; }
   .app-shell {
-    height: calc(100vh - 59px);
-    height: calc(100dvh - 59px);
-    padding: 7px 10px 6px;
+    height: calc(100vh - 54px);
+    height: calc(100dvh - 54px);
+    padding: 3px 10px;
   }
-  .board-heading { min-height: 34px; flex-basis: 34px; }
-  .board-heading h2 { font-size: 18px; }
-  .board-meta { font-size: 7px; }
-  .player-rail { min-height: 39px; padding: 4px 8px; border-radius: 8px; }
-  .dark-rail { margin-bottom: 2px; }
-  .light-rail { margin-top: 3px; }
-  .avatar { width: 27px; height: 27px; border-radius: 8px; }
-  .rail-details strong { font-size: 9px; }
+  .board-heading { min-height: 20px; flex-basis: 20px; }
+  .board-heading h2 { font-size: 14px; }
+  .board-meta { font-size: 6px; }
+  .player-rail { min-height: 29px; padding: 2px 6px; border-radius: 7px; }
+  .dark-rail { margin-bottom: 1px; }
+  .light-rail { margin-top: 1px; }
+  .avatar { width: 21px; height: 21px; border-radius: 6px; }
+  .rail-details strong { font-size: 8px; }
   .rail-details small { display: none; }
-  .clock { min-width: 63px; height: 26px; font-size: 13px; }
-  .board-stage { width: calc(var(--board-width) + 30px); padding: 3px 14px 11px; }
-  .rank-coordinates { transform: translateX(10px); }
-  .file-coordinates { left: 14px; }
-  .board-footer { margin-top: 4px; min-height: 27px; }
-  .turn-piece { width: 24px; height: 24px; font-size: 19px; }
-  .turn-guide b { font-size: 9px; }
-  .turn-guide small { display: none; }
+  .clock { min-width: 58px; height: 22px; font-size: 12px; }
+  .board-stage { width: calc(var(--board-width) + 24px); padding: 1px 11px 7px; }
+  .rank-coordinates { transform: translateX(8px); }
+  .file-coordinates { left: 11px; }
+  .board-footer { display: none; }
 }
 
 @media (max-height: 520px) {
   :root {
-    --game-chrome: 205px;
+    --game-chrome: 145px;
     --square-size: max(26px, calc((100dvh - var(--game-chrome)) / 8));
   }
   .board-heading { display: none; }
   .player-rail { min-height: 32px; }
   .avatar { display: none; }
   .board-footer { display: none; }
+}
+
+@media (max-height: 520px) and (max-width: 700px) {
+  :root { --square-size: min(calc((100vw - 44px) / 8), max(26px, calc((100dvh - var(--game-chrome)) / 8))); }
 }
