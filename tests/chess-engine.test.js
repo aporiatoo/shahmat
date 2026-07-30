@@ -373,6 +373,12 @@ test('local persistence restores a paused resumable solo game with settings', ()
   assert.equal(after.resumable, true);
 });
 
+test('daily puzzle position contains its intended legal mating move', () => {
+  chess.resetState();
+  chess.loadFen('7k/8/5KQ1/8/8/8/8/8 w - - 0 1');
+  assert.ok(hasMove(chess.getLegalMoves({ y: 2, x: 6 }), 1, 6));
+});
+
 test('invalid FEN input is rejected without silently changing position', () => {
   chess.resetState();
   assert.throws(() => chess.loadFen('not a valid FEN'));

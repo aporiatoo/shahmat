@@ -40,9 +40,12 @@
         <p class="menu-description">به میدان نبرد با استاد هوشمند وارد شوید؛ قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
         <section class="launch-settings" aria-label="تنظیمات نبرد">
           <label><span>درجه‌ی استاد</span><select id="difficultySelect"><option value="easy">آموزشی</option><option value="normal" selected>تاکتیکی</option><option value="hard">استاد</option></select></label>
-          <label><span>کنترل زمان</span><select id="timeControlSelect"><option value="none">بدون ساعت</option><option value="blitz3">۳ دقیقه</option><option value="blitz5">۵ دقیقه</option><option value="rapid10" selected>۱۰ دقیقه</option><option value="rapid15">۱۵ + ۱۰</option></select></label>
+          <label><span>کنترل زمان</span><select id="timeControlSelect"><option value="none">بدون ساعت</option><option value="blitz3">۳ دقیقه</option><option value="blitz5">۵ دقیقه</option><option value="rapid10" selected>۱۰ دقیقه</option><option value="rapid15">۱۵ + ۱۰</option><option value="challenge">چالش ۱ دقیقه</option></select></label>
           <label><span>کیفیت صحنه</span><select id="qualitySelect"><option value="eco">اقتصادی</option><option value="balanced" selected>متعادل</option><option value="cinematic">سینمایی</option></select></label>
           <label><span>محیط نبرد</span><select id="environmentSelect"><option value="emerald" selected>تالار زمردی</option><option value="library">کتابخانه</option><option value="marble">مرمر و طلا</option><option value="obsidian">آبسیدین</option><option value="persian">تالار ایرانی</option></select></label>
+          <label><span>حالت بازی</span><select id="gameplayModeSelect"><option value="classic" selected>نبرد کلاسیک</option><option value="puzzle">پازل روز</option><option value="opening">آغاز از افتتاحیه</option><option value="challenge">چالش برق‌آسا</option><option value="royal">نبرد سلطنتی</option></select></label>
+          <label><span>افتتاحیه</span><select id="openingSelect"><option value="start" selected>شروع استاندارد</option><option value="sicilian">دفاع سیسیلی</option><option value="london">سیستم لندن</option><option value="caro">دفاع کاروکان</option></select></label>
+          <label><span>سطح راهنما</span><select id="assistSelect"><option value="free">آزاد</option><option value="coach" selected>آموزشی</option><option value="master">استادی</option></select></label>
         </section>
         <div class="color-choice" aria-label="انتخاب رنگ مهره‌های بازیکن">
           <span>رنگ مهره‌های شما</span>
@@ -51,6 +54,7 @@
             <button class="color-choice-button" id="chooseBlackButton" data-player-color="b" type="button" aria-pressed="false"><i>♚</i><b>سیاه</b></button>
           </div>
         </div>
+        <div class="mission-strip" id="missionStrip"><span>ماموریت امروز</span><b id="missionText">یک حرکت هوشمندانه انجام دهید</b></div>
         <div class="menu-primary-actions">
           <button class="menu-play-button" id="startBotButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع نبرد</b><small id="startGameSubtext">شما سفید · استاد هوشمند سیاه</small></span></button>
           <button class="menu-how-button" id="mainGuideButton" type="button"><span>؟</span> راهنمای سریع</button>
@@ -175,9 +179,10 @@
     </div>
 
     <div class="endgame-modal" id="endgameModal" role="dialog" aria-modal="true" aria-labelledby="endgameTitle" hidden>
-        <div class="modal-card endgame-card"><div class="endgame-seal">♚</div><p class="eyebrow">ROYAL RESULT</p><h2 id="endgameTitle">بازی به پایان رسید</h2><p id="endgameDescription">یک شروع تازه برای نبرد بعدی آماده است.</p><div class="endgame-insights" id="endgameInsights"></div><p class="battle-trail" id="battleTrail"></p><div class="endgame-actions"><button class="primary-action" id="modalNewGame" type="button">شروع بازی تازه</button><button class="share-battle" id="shareBattleButton" type="button">ذخیره ردّ نبرد</button></div></div>
+        <div class="modal-card endgame-card"><div class="endgame-seal">♚</div><p class="eyebrow">ROYAL RESULT</p><h2 id="endgameTitle">بازی به پایان رسید</h2><p id="endgameDescription">یک شروع تازه برای نبرد بعدی آماده است.</p><div class="endgame-insights" id="endgameInsights"></div><p class="battle-trail" id="battleTrail"></p><div class="endgame-actions"><button class="primary-action" id="modalNewGame" type="button">شروع بازی تازه</button><button class="share-battle" id="shareBattleButton" type="button">ذخیره ردّ نبرد</button><button class="review-battle" id="reviewBattleButton" type="button">مرور حرکت‌ها</button></div></div>
     </div>
 
+    <div class="review-modal" id="reviewModal" role="dialog" aria-modal="true" aria-labelledby="reviewTitle" hidden><div class="modal-card review-card"><button id="closeReview" class="close-modal" type="button" aria-label="بستن">×</button><p class="eyebrow">BATTLE REVIEW</p><h2 id="reviewTitle">مرور نبرد</h2><p id="reviewSummary"></p><div class="review-moves" id="reviewMoves"></div></div></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
     <script src="app.js"></script>

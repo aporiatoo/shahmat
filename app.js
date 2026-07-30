@@ -70,6 +70,11 @@
       difficulty: 'normal',
       graphicsQuality: 'balanced',
       environment: 'emerald',
+      gameplayMode: 'classic',
+      opening: 'start',
+      assistLevel: 'coach',
+      objective: null,
+      mission: null,
       botMessage: 'برای کنترل مرکز آماده باشید.',
       directorFocus: null,
       halfmoveClock: 0,
@@ -120,6 +125,11 @@
       difficulty: state.difficulty,
       graphicsQuality: state.graphicsQuality,
       environment: state.environment,
+      gameplayMode: state.gameplayMode,
+      opening: state.opening,
+      assistLevel: state.assistLevel,
+      objective: clonePlain(state.objective),
+      mission: clonePlain(state.mission),
       botMessage: state.botMessage,
       halfmoveClock: state.halfmoveClock,
       fullmoveNumber: state.fullmoveNumber,
@@ -155,6 +165,11 @@
     state.difficulty = ['easy', 'normal', 'hard'].includes(snapshot.difficulty) ? snapshot.difficulty : 'normal';
     state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(snapshot.graphicsQuality) ? snapshot.graphicsQuality : 'balanced';
     state.environment = ['emerald', 'library', 'marble', 'obsidian', 'persian'].includes(snapshot.environment) ? snapshot.environment : 'emerald';
+    state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(snapshot.gameplayMode) ? snapshot.gameplayMode : 'classic';
+    state.opening = ['start', 'sicilian', 'london', 'caro'].includes(snapshot.opening) ? snapshot.opening : 'start';
+    state.assistLevel = ['free', 'coach', 'master'].includes(snapshot.assistLevel) ? snapshot.assistLevel : 'coach';
+    state.objective = clonePlain(snapshot.objective);
+    state.mission = clonePlain(snapshot.mission);
     state.botMessage = snapshot.botMessage || 'برای کنترل مرکز آماده باشید.';
     state.halfmoveClock = snapshot.halfmoveClock ?? 0;
     state.fullmoveNumber = snapshot.fullmoveNumber ?? 1;
@@ -271,7 +286,8 @@
     blitz3: { initial: 180, increment: 0, label: '۳ دقیقه' },
     blitz5: { initial: 300, increment: 0, label: '۵ دقیقه' },
     rapid10: { initial: 600, increment: 0, label: '۱۰ دقیقه' },
-    rapid15: { initial: 900, increment: 10, label: '۱۵ + ۱۰' }
+    rapid15: { initial: 900, increment: 10, label: '۱۵ + ۱۰' },
+    challenge: { initial: 60, increment: 0, label: 'چالش برق‌آسا' }
   };
 
   function setTimeControl(control) {
@@ -302,6 +318,105 @@
     if (state.environment !== 'emerald') document.body.classList.add(`env-${state.environment}`);
     syncThreeBoard();
     updateLaunchSettingsUI();
+  }
+
+  const OPENINGS = {
+    start: null,
+    sicilian: { label: 'دفاع سیسیلی', fen: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2' },
+    london: { label: 'سیستم لندن', fen: 'rnbqkb1r/ppp1pppp/5n2/3p4/3P1B2/5N2/PPP1PPPP/RN1QKB1R b KQkq - 3 3' },
+    caro: { label: 'دفاع کاروکان', fen: 'rnbqkbnr/pp1ppppp/2p5/3P4/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2' }
+  };
+
+  const PUZZLES = [
+    { title: 'مات در یک', fen: '7k/8/5KQ1/8/8/8/8/8 w - - 0 1', from: { y: 2, x: 6 }, to: { y: 1, x: 6 }, text: 'وزیر را به g7 ببرید و شاه سیاه را مات کنید.' },
+    { title: 'شاه را محاصره کن', fen: '7k/5K2/6Q1/8/8/8/8/8 w - - 0 1', from: { y: 2, x: 6 }, to: { y: 1, x: 6 }, text: 'حرکت طلایی وزیر را پیدا کنید.' }
+  ];
+
+  const MISSIONS = [
+    { id: 'castle', text: 'در این نبرد قلعه بروید.' },
+    { id: 'check', text: 'یک بار شاه حریف را کیش کنید.' },
+    { id: 'capture-queen', text: 'وزیر استاد را شکار کنید.' },
+    { id: 'center', text: 'یک مهره را به مرکز صفحه برسانید.' }
+  ];
+
+  function dailyMission() {
+    const day = Math.floor(Date.now() / 86400000);
+    return { ...MISSIONS[day % MISSIONS.length], complete: false };
+  }
+
+  function dailyPuzzle() {
+    const day = Math.floor(Date.now() / 86400000);
+    return PUZZLES[day % PUZZLES.length];
+  }
+
+  function setGameplayMode(mode) {
+    state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(mode) ? mode : 'classic';
+    updateLaunchSettingsUI();
+  }
+
+  function setOpening(opening) {
+    state.opening = OPENINGS[opening] ? opening : 'start';
+    updateLaunchSettingsUI();
+  }
+
+  function setAssistLevel(level) {
+    state.assistLevel = ['free', 'coach', 'master'].includes(level) ? level : 'coach';
+    updateLaunchSettingsUI();
+  }
+
+  function updateMissionUI() {
+    const el = document.getElementById('missionText');
+    if (el) el.textContent = state.mission?.complete ? 'ماموریت کامل شد؛ افتخار به شما!' : (state.mission?.text || 'یک حرکت هوشمندانه انجام دهید');
+  }
+
+  function checkMission(piece, move, captured, gaveCheck) {
+    if (!state.mission || state.mission.complete || piece.color !== state.playerColor) return;
+    const atCenter = move.x >= 2 && move.x <= 5 && move.y >= 2 && move.y <= 5;
+    const complete = (state.mission.id === 'castle' && move.special?.startsWith('castle')) ||
+      (state.mission.id === 'check' && gaveCheck) ||
+      (state.mission.id === 'capture-queen' && captured?.type === 'q') ||
+      (state.mission.id === 'center' && atCenter);
+    if (complete) {
+      state.mission.complete = true;
+      showToast('ماموریت امروز کامل شد ✦');
+      updateMissionUI();
+    }
+  }
+
+  function prepareGameplayMode() {
+    state.mission = dailyMission();
+    state.objective = null;
+    if (state.gameplayMode === 'puzzle') {
+      const puzzle = dailyPuzzle();
+      loadFen(puzzle.fen);
+      state.playerColor = 'w';
+      state.botColor = 'b';
+      state.mode = 'puzzle';
+      state.objective = { type: 'puzzle', title: puzzle.title, from: puzzle.from, to: puzzle.to, text: puzzle.text };
+      state.botMessage = `پازل روز: ${puzzle.text}`;
+    } else if (state.gameplayMode === 'opening' && OPENINGS[state.opening]?.fen) {
+      loadFen(OPENINGS[state.opening].fen);
+      state.mode = 'bot';
+      state.objective = { type: 'opening', title: OPENINGS[state.opening].label, text: `نبرد از ${OPENINGS[state.opening].label} آغاز شد.` };
+      state.botMessage = state.objective.text;
+    } else if (state.gameplayMode === 'challenge') {
+      state.timeControl = 'challenge';
+      state.initialTime = 60;
+      state.increment = 0;
+      state.timers = { w: 60, b: 60 };
+      state.mode = 'bot';
+      state.objective = { type: 'challenge', title: 'چالش برق‌آسا', text: 'برای هر طرف فقط یک دقیقه زمان وجود دارد.' };
+    } else if (state.gameplayMode === 'royal') {
+      state.mode = 'bot';
+      const wins = readCareerStats().wins;
+      const environments = ['emerald', 'library', 'marble', 'obsidian', 'persian'];
+      state.environment = environments[Math.min(environments.length - 1, Math.floor(wins / 3))];
+      setEnvironment(state.environment);
+      state.objective = { type: 'royal', title: 'نبرد سلطنتی', text: 'با هر پیروزی، تالار جدیدی در مسیر شما باز می‌شود.' };
+    } else {
+      state.mode = 'bot';
+    }
+    updateMissionUI();
   }
 
   function hasInsufficientMaterial() {
@@ -1155,7 +1270,8 @@
     const botTurn = state.mode === 'bot' && state.botThinking;
     document.getElementById('statusText').textContent = state.gameOver ? state.result : (idle ? 'آماده‌ی شروع نبرد' : (botTurn ? 'استاد هوشمند · در حال فکر کردن' : `نبرد با استاد · نوبت ${colorName}${inCheck ? ' · کیش' : ''}`));
     document.getElementById('turnTitle').textContent = state.gameOver ? 'نبرد تمام شد' : (idle ? 'نبرد آماده است' : (botTurn ? 'استاد در حال انتخاب حرکت است' : `نوبت ${colorName} است`));
-    document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (idle ? 'برای آغاز، دکمه‌ی شروع نبرد را بزنید' : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`));
+    const assistHint = state.assistLevel === 'master' ? 'راهنمای طلایی برای شما فعال است' : state.assistLevel === 'coach' ? 'حرکت‌های قانونی را با دقت بررسی کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`;
+    document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (idle ? 'برای آغاز، دکمه‌ی شروع نبرد را بزنید' : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : assistHint));
     document.querySelector('.turn-piece').textContent = state.gameOver ? '♔' : unicodePieces[state.turn].p;
     document.getElementById('moveCounter').textContent = `حرکت ${farsiMoveNumber(Math.ceil(state.moves.length / 2))} از ۶۰`;
     document.getElementById('orientationText').textContent = `نمای پشت مهره‌های ${state.playerColor === 'w' ? 'سفید' : 'سیاه'} شما`;
@@ -1300,6 +1416,23 @@
     return `<b>${battleTitle()}</b>${recent ? ` · مسیر پایانی: ${recent}` : ''}`;
   }
 
+  function openBattleReview() {
+    const modal = document.getElementById('reviewModal');
+    document.getElementById('reviewSummary').textContent = `${battleTitle()} · ${state.moves.length} نیم‌حرکت ثبت شده است.`;
+    let movesHtml = '';
+    for (let index = 0; index < state.moves.length; index += 2) {
+      const white = state.moves[index];
+      const black = state.moves[index + 1];
+      movesHtml += `<div class="move-row"><span>${farsiMoveNumber(Math.floor(index / 2) + 1)}.</span><span>${white?.notation || ''}</span><span class="${!black ? 'last' : ''}">${black?.notation || ''}</span></div>`;
+    }
+    document.getElementById('reviewMoves').innerHTML = movesHtml || '<div class="opening-note">حرکتی برای مرور ثبت نشده است.</div>';
+    modal.hidden = false;
+  }
+
+  function closeBattleReview() {
+    document.getElementById('reviewModal').hidden = true;
+  }
+
   function shareBattleSnapshot() {
     const canvas = threeBoard?.canvas;
     if (!canvas) { showToast('نمای سه‌بعدی برای ذخیره‌ی تصویر در دسترس نیست.'); return; }
@@ -1361,7 +1494,9 @@
     const replies = getAllLegalMoves(state.turn);
     let suffix = enemyInCheck ? '+' : '';
     let gameEnd = null;
-    if (!replies.length) {
+    if (state.mode === 'puzzle' && state.objective?.type === 'puzzle') {
+      gameEnd = { title: 'پازل حل شد · حرکت درخشان', description: 'مسیر درست را پیدا کردید؛ پازل فردا منتظر شماست.' };
+    } else if (!replies.length) {
       if (enemyInCheck) {
         suffix = '#';
         gameEnd = {
@@ -1381,6 +1516,7 @@
     const notation = makeNotation(piece, from, move, captured, promotion, suffix);
     if (piece.color === state.botColor) state.botMessage = makeBotFeedback(piece, move, captured, enemyInCheck);
     else if (captured) state.botMessage = 'تبادل مهمی بود؛ پاسخ من در راه است.';
+    checkMission(piece, move, captured, enemyInCheck);
     if (captured || enemyInCheck || promotion) state.directorFocus = { x: move.x, y: move.y, until: Date.now() + 1150 };
     state.moves.push({ notation, color: piece.color });
     playMoveSound(captured ? 'capture' : 'move');
@@ -1405,6 +1541,16 @@
     if (!target || !state.gameStarted || state.gameOver || state.pendingPromotion || state.botThinking) return;
     const selectedMove = state.legalMoves.find(move => move.y === target.y && move.x === target.x);
     if (state.selected && selectedMove) {
+      if (state.mode === 'puzzle' && state.objective?.type === 'puzzle') {
+        const rightMove = state.selected.y === state.objective.from.y && state.selected.x === state.objective.from.x && target.y === state.objective.to.y && target.x === state.objective.to.x;
+        if (!rightMove) {
+          state.selected = null;
+          state.legalMoves = [];
+          render();
+          showToast('این مسیر پازل نیست؛ یک بار دیگر فکر کنید.');
+          return;
+        }
+      }
       beginMove(state.selected, selectedMove);
       return;
     }
@@ -1412,7 +1558,7 @@
     if (piece?.color === state.turn && piece.color === state.playerColor) {
       state.selected = target;
       state.legalMoves = getLegalMoves(target);
-      state.hint = null;
+      state.hint = state.assistLevel === 'master' ? masterSuggestion() : null;
       render();
       if (!state.legalMoves.length) showToast('این مهره در حال حاضر حرکت قانونی ندارد.');
       return;
@@ -1449,6 +1595,9 @@
     const difficulty = state.difficulty;
     const graphicsQuality = state.graphicsQuality;
     const environment = state.environment;
+    const gameplayMode = state.gameplayMode;
+    const opening = state.opening;
+    const assistLevel = state.assistLevel;
     resetState();
     state.mode = 'bot';
     state.playerColor = playerColor;
@@ -1457,6 +1606,9 @@
     state.difficulty = difficulty;
     state.graphicsQuality = graphicsQuality;
     state.environment = environment;
+    state.gameplayMode = gameplayMode;
+    state.opening = opening;
+    state.assistLevel = assistLevel;
     setEnvironment(environment);
     setTimeControl(timeControl);
     state.gameStarted = true;
@@ -1476,6 +1628,17 @@
     endGame('تسلیم · استاد هوشمند پیروز شد', 'شما نبرد را واگذار کردید. برای تلاش دوباره، بازی تازه را انتخاب کنید.');
     closeGameMenu();
     render();
+  }
+
+  function masterSuggestion() {
+    const moves = getAllLegalMoves(state.playerColor);
+    if (!moves.length) return null;
+    const ranked = moves.map(entry => {
+      const target = state.board[entry.move.y][entry.move.x];
+      const central = 3.5 - Math.abs(entry.move.x - 3.5) + 3.5 - Math.abs(entry.move.y - 3.5);
+      return { ...entry, score: (target ? materialValue(target.type) * 5 : 0) + central * 4 };
+    }).sort((a, b) => b.score - a.score);
+    return { from: ranked[0].from, to: { y: ranked[0].move.y, x: ranked[0].move.x } };
   }
 
   function giveHint() {
@@ -1511,6 +1674,11 @@
         difficulty: state.difficulty,
         graphicsQuality: state.graphicsQuality,
         environment: state.environment,
+        gameplayMode: state.gameplayMode,
+        opening: state.opening,
+        assistLevel: state.assistLevel,
+        objective: state.objective,
+        mission: state.mission,
         botMessage: state.botMessage,
         halfmoveClock: state.halfmoveClock,
         fullmoveNumber: state.fullmoveNumber,
@@ -1559,6 +1727,11 @@
       state.difficulty = ['easy', 'normal', 'hard'].includes(saved.difficulty) ? saved.difficulty : 'normal';
       state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(saved.graphicsQuality) ? saved.graphicsQuality : 'balanced';
       state.environment = ['emerald', 'library', 'marble', 'obsidian', 'persian'].includes(saved.environment) ? saved.environment : 'emerald';
+      state.gameplayMode = ['classic', 'puzzle', 'opening', 'challenge', 'royal'].includes(saved.gameplayMode) ? saved.gameplayMode : 'classic';
+      state.opening = ['start', 'sicilian', 'london', 'caro'].includes(saved.opening) ? saved.opening : 'start';
+      state.assistLevel = ['free', 'coach', 'master'].includes(saved.assistLevel) ? saved.assistLevel : 'coach';
+      state.objective = saved.objective || null;
+      state.mission = saved.mission || null;
       state.botMessage = saved.botMessage || 'برای کنترل مرکز آماده باشید.';
       const fallbackTime = TIME_CONTROLS[state.timeControl].initial || 0;
       state.timers = { w: Math.max(0, Number(saved.timers?.w) || fallbackTime), b: Math.max(0, Number(saved.timers?.b) || fallbackTime) };
@@ -1737,10 +1910,17 @@
     const time = document.getElementById('timeControlSelect');
     const quality = document.getElementById('qualitySelect');
     const environment = document.getElementById('environmentSelect');
+    const mode = document.getElementById('gameplayModeSelect');
+    const opening = document.getElementById('openingSelect');
+    const assist = document.getElementById('assistSelect');
     if (difficulty) difficulty.value = state.difficulty;
     if (time) time.value = state.timeControl;
     if (quality) quality.value = state.graphicsQuality;
     if (environment) environment.value = state.environment;
+    if (mode) mode.value = state.gameplayMode;
+    if (opening) opening.value = state.opening;
+    if (assist) assist.value = state.assistLevel;
+    updateMissionUI();
   }
 
   function updateColorChoiceUI() {
@@ -1785,11 +1965,15 @@
   }
 
   function startSoloGame() {
+    const needsPreparation = state.gameOver || state.colorSelectionChanged || !state.resumable;
     const selectedColor = state.playerColor;
     const timeControl = state.timeControl;
     const difficulty = state.difficulty;
     const graphicsQuality = state.graphicsQuality;
     const environment = state.environment;
+    const gameplayMode = state.gameplayMode;
+    const opening = state.opening;
+    const assistLevel = state.assistLevel;
     if (state.gameOver || state.colorSelectionChanged) {
       resetState();
       endgameModal.hidden = true;
@@ -1798,11 +1982,14 @@
       state.difficulty = difficulty;
       state.graphicsQuality = graphicsQuality;
       state.environment = environment;
+      state.gameplayMode = gameplayMode;
+      state.opening = opening;
+      state.assistLevel = assistLevel;
       setEnvironment(environment);
       setTimeControl(timeControl);
       state.colorSelectionChanged = false;
     }
-    state.mode = 'bot';
+    if (needsPreparation) prepareGameplayMode();
     state.botColor = opposite(state.playerColor);
     state.startedPlayerColor = state.playerColor;
     state.gameStarted = true;
@@ -1858,6 +2045,9 @@
     document.getElementById('timeControlSelect').addEventListener('change', event => setTimeControl(event.target.value));
     document.getElementById('qualitySelect').addEventListener('change', event => setGraphicsQuality(event.target.value));
     document.getElementById('environmentSelect').addEventListener('change', event => setEnvironment(event.target.value));
+    document.getElementById('gameplayModeSelect').addEventListener('change', event => setGameplayMode(event.target.value));
+    document.getElementById('openingSelect').addEventListener('change', event => setOpening(event.target.value));
+    document.getElementById('assistSelect').addEventListener('change', event => setAssistLevel(event.target.value));
     document.getElementById('mainGuideButton').addEventListener('click', () => {
       const guide = document.getElementById('mainGuide');
       guide.hidden = !guide.hidden;
@@ -1882,6 +2072,8 @@
     document.getElementById('menuResign').addEventListener('click', resignGame);
     document.getElementById('modalNewGame').addEventListener('click', newGame);
     document.getElementById('shareBattleButton').addEventListener('click', shareBattleSnapshot);
+    document.getElementById('reviewBattleButton').addEventListener('click', openBattleReview);
+    document.getElementById('closeReview').addEventListener('click', closeBattleReview);
 
     document.getElementById('closePromotion').addEventListener('click', () => {
       state.pendingPromotion = null;
