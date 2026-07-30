@@ -538,9 +538,9 @@
     if (!threeBoard) return;
     const { camera, target } = threeBoard;
     const direction = state.flipped ? -1 : 1;
-    const zoom = state.focused ? .84 : 1;
+    const zoom = state.focused ? .93 : 1;
     camera.position.set(7.9 * direction * zoom, 10.9 * zoom, 9.7 * direction * zoom);
-    camera.fov = state.focused ? 40 : 46;
+    camera.fov = state.focused ? 43 : 46;
     camera.lookAt(target);
     camera.updateProjectionMatrix();
   }
@@ -716,6 +716,7 @@
   }
 
   function handleThreeCanvasHover(event) {
+    if (!threeBoard) return;
     const square = resolveThreeSquare(event);
     threeBoard.canvas.style.cursor = square && state.gameStarted && !state.gameOver ? 'pointer' : 'default';
   }
@@ -1143,6 +1144,20 @@
     showToast('دوئل آغاز شد؛ نوبت مهره‌های سفید است.');
   }
 
+  function flipThreeView() {
+    if (!state.gameStarted) return;
+    state.flipped = !state.flipped;
+    syncThreeBoard();
+    renderStatus();
+  }
+
+  function toggleFocusMode() {
+    if (!state.gameStarted) return;
+    state.focused = !state.focused;
+    syncThreeBoard();
+    renderStatus();
+  }
+
   function toggleTheme() {
     document.body.classList.toggle('alt-light');
     syncThreeBoard();
@@ -1184,8 +1199,8 @@
     const closeAfter = action => () => { action(); closeGameMenu(); };
     document.getElementById('menuUndo').addEventListener('click', closeAfter(undoMove));
     document.getElementById('menuHint').addEventListener('click', closeAfter(giveHint));
-    document.getElementById('menuFlip').addEventListener('click', closeAfter(() => { if (state.gameStarted) { state.flipped = !state.flipped; renderStatus(); } }));
-    document.getElementById('menuFocus').addEventListener('click', closeAfter(() => { if (state.gameStarted) { state.focused = !state.focused; renderStatus(); } }));
+    document.getElementById('menuFlip').addEventListener('click', closeAfter(flipThreeView));
+    document.getElementById('menuFocus').addEventListener('click', closeAfter(toggleFocusMode));
     document.getElementById('menuTheme').addEventListener('click', toggleTheme);
     document.getElementById('menuSound').addEventListener('click', toggleSound);
     document.getElementById('menuCopyPgn').addEventListener('click', copyPgn);
@@ -1221,8 +1236,7 @@
         }
       }
       if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && state.gameStarted) {
-        state.flipped = !state.flipped;
-        renderStatus();
+        flipThreeView();
       }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();
