@@ -38,16 +38,25 @@
         <p class="menu-kicker">A GAME OF PATIENCE &amp; POWER</p>
         <h1 id="mainMenuTitle">تاج‌وتخت، در <em>دستان تو</em></h1>
         <p class="menu-description">به میدان نبرد با استاد هوشمند وارد شوید؛ قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
-        <section class="launch-settings" aria-label="تنظیمات نبرد">
-          <label><span>درجه‌ی استاد</span><select id="difficultySelect"><option value="easy">آموزشی</option><option value="normal" selected>تاکتیکی</option><option value="hard">استاد</option></select></label>
-          <label><span>کنترل زمان</span><select id="timeControlSelect"><option value="none">بدون ساعت</option><option value="blitz3">۳ دقیقه</option><option value="blitz5">۵ دقیقه</option><option value="rapid10" selected>۱۰ دقیقه</option><option value="rapid15">۱۵ + ۱۰</option><option value="challenge">چالش ۱ دقیقه</option></select></label>
-          <label><span>کیفیت صحنه</span><select id="qualitySelect"><option value="eco">اقتصادی</option><option value="balanced" selected>متعادل</option><option value="cinematic">سینمایی</option></select></label>
-          <label><span>محیط نبرد</span><select id="environmentSelect"><option value="emerald" selected>تالار زمردی</option><option value="library">کتابخانه</option><option value="marble">مرمر و طلا</option><option value="obsidian">آبسیدین</option><option value="persian">تالار ایرانی</option></select></label>
-          <label><span>حالت بازی</span><select id="gameplayModeSelect"><option value="classic" selected>نبرد کلاسیک</option><option value="puzzle">پازل روز</option><option value="opening">آغاز از افتتاحیه</option><option value="challenge">چالش برق‌آسا</option><option value="royal">نبرد سلطنتی</option></select></label>
-          <label><span>افتتاحیه</span><select id="openingSelect"><option value="start" selected>شروع استاندارد</option><option value="sicilian">دفاع سیسیلی</option><option value="london">سیستم لندن</option><option value="caro">دفاع کاروکان</option></select></label>
-          <label><span>سطح راهنما</span><select id="assistSelect"><option value="free">آزاد</option><option value="coach" selected>آموزشی</option><option value="master">استادی</option></select></label>
-          <label><span>نمای صحنه</span><select id="renderModeSelect"><option value="3d" selected>سه‌بعدی حقیقی</option><option value="classic">نمای کلاسیک</option></select></label>
-        </section>
+        <details class="main-options" id="mainOptions">
+          <summary><span>تنظیمات و راهنمای نبرد</span><small>باز کردن</small></summary>
+          <section class="launch-settings" aria-label="تنظیمات نبرد">
+            <label><span>درجه‌ی استاد</span><select id="difficultySelect"><option value="easy">آموزشی</option><option value="normal" selected>تاکتیکی</option><option value="hard">استاد</option></select></label>
+            <label><span>کنترل زمان</span><select id="timeControlSelect"><option value="none">بدون ساعت</option><option value="blitz3">۳ دقیقه</option><option value="blitz5">۵ دقیقه</option><option value="rapid10" selected>۱۰ دقیقه</option><option value="rapid15">۱۵ + ۱۰</option><option value="challenge">چالش ۱ دقیقه</option></select></label>
+            <label><span>کیفیت صحنه</span><select id="qualitySelect"><option value="eco">اقتصادی</option><option value="balanced" selected>متعادل</option><option value="cinematic">سینمایی</option></select></label>
+            <label><span>محیط نبرد</span><select id="environmentSelect"><option value="emerald" selected>تالار زمردی</option><option value="library">کتابخانه</option><option value="marble">مرمر و طلا</option><option value="obsidian">آبسیدین</option><option value="persian">تالار ایرانی</option></select></label>
+            <label><span>حالت بازی</span><select id="gameplayModeSelect"><option value="classic" selected>نبرد کلاسیک</option><option value="puzzle">پازل روز</option><option value="opening">آغاز از افتتاحیه</option><option value="challenge">چالش برق‌آسا</option><option value="royal">نبرد سلطنتی</option></select></label>
+            <label><span>افتتاحیه</span><select id="openingSelect"><option value="start" selected>شروع استاندارد</option><option value="sicilian">دفاع سیسیلی</option><option value="london">سیستم لندن</option><option value="caro">دفاع کاروکان</option></select></label>
+            <label><span>سطح راهنما</span><select id="assistSelect"><option value="free">آزاد</option><option value="coach" selected>آموزشی</option><option value="master">استادی</option></select></label>
+            <label><span>نمای صحنه</span><select id="renderModeSelect"><option value="3d" selected>سه‌بعدی حقیقی</option><option value="classic">نمای کلاسیک</option></select></label>
+          </section>
+          <button class="menu-how-button" id="mainGuideButton" type="button"><span>؟</span> راهنمای سریع</button>
+          <div class="main-guide" id="mainGuide" hidden>
+            <div><b>۱</b><span>یک مهره را انتخاب کنید.</span></div>
+            <div><b>۲</b><span>یکی از خانه‌های روشن را بزنید.</span></div>
+            <div><b>۳</b><span>نوبت به حریف می‌رسد.</span></div>
+          </div>
+        </details>
         <div class="color-choice" aria-label="انتخاب رنگ مهره‌های بازیکن">
           <span>رنگ مهره‌های شما</span>
           <div>
@@ -58,12 +67,6 @@
         <div class="mission-strip" id="missionStrip"><span>ماموریت امروز</span><b id="missionText">یک حرکت هوشمندانه انجام دهید</b></div>
         <div class="menu-primary-actions">
           <button class="menu-play-button" id="startBotButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع نبرد</b><small id="startGameSubtext">شما سفید · استاد هوشمند سیاه</small></span></button>
-          <button class="menu-how-button" id="mainGuideButton" type="button"><span>؟</span> راهنمای سریع</button>
-        </div>
-        <div class="main-guide" id="mainGuide" hidden>
-          <div><b>۱</b><span>یک مهره را انتخاب کنید.</span></div>
-          <div><b>۲</b><span>یکی از خانه‌های روشن را بزنید.</span></div>
-          <div><b>۳</b><span>نوبت به حریف می‌رسد.</span></div>
         </div>
         <div class="menu-footnote"><span></span> قلعه‌رفتن، آن‌پاسان و ارتقای پیاده فعال‌اند</div>
         <div class="career-strip" aria-label="آمار شخصی"><span><b id="careerWins">۰</b> برد</span><span><b id="careerLosses">۰</b> باخت</span><span><b id="careerDraws">۰</b> مساوی</span></div>
