@@ -1,0 +1,19 @@
+{
+  "name": "شاه‌مات | شطرنج سه‌بعدی",
+  "short_name": "شاه‌مات",
+  "description": "بازی شطرنج سه‌بعدی فارسی با ذخیره‌سازی آفلاین و حریف هوشمند محلی",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#081012",
+  "theme_color": "#0b1214",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

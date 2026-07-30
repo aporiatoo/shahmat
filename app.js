@@ -64,6 +64,14 @@
       enPassant: null,
       capturedBy: { w: [], b: [] },
       timers: { w: 600, b: 600 },
+      halfmoveClock: 0,
+      fullmoveNumber: 1,
+      positionHistory: [],
+      mode: 'local',
+      botColor: 'b',
+      botThinking: false,
+      resumable: false,
+      autoSave: true,
       gameOver: false,
       gameStarted: false,
       result: '',
@@ -73,6 +81,7 @@
       hint: null,
       pendingPromotion: null
     };
+    state.positionHistory = [positionKey()];
   }
 
   function cloneBoard(board) {
@@ -93,6 +102,14 @@
       enPassant: clonePlain(state.enPassant),
       capturedBy: { w: clonePlain(state.capturedBy.w), b: clonePlain(state.capturedBy.b) },
       timers: { ...state.timers },
+      halfmoveClock: state.halfmoveClock,
+      fullmoveNumber: state.fullmoveNumber,
+      positionHistory: clonePlain(state.positionHistory),
+      mode: state.mode,
+      botColor: state.botColor,
+      botThinking: state.botThinking,
+      resumable: state.resumable,
+      autoSave: state.autoSave,
       gameOver: state.gameOver,
       gameStarted: state.gameStarted,
       result: state.result,
@@ -109,6 +126,14 @@
     state.enPassant = clonePlain(snapshot.enPassant);
     state.capturedBy = { w: clonePlain(snapshot.capturedBy.w), b: clonePlain(snapshot.capturedBy.b) };
     state.timers = { ...snapshot.timers };
+    state.halfmoveClock = snapshot.halfmoveClock ?? 0;
+    state.fullmoveNumber = snapshot.fullmoveNumber ?? 1;
+    state.positionHistory = clonePlain(snapshot.positionHistory) || [positionKey()];
+    state.mode = snapshot.mode || 'local';
+    state.botColor = snapshot.botColor || 'b';
+    state.botThinking = false;
+    state.resumable = Boolean(snapshot.resumable);
+    state.autoSave = snapshot.autoSave !== false;
     state.gameOver = snapshot.gameOver;
     state.gameStarted = snapshot.gameStarted;
     state.result = snapshot.result;
@@ -124,6 +149,103 @@
   function sameSquare(a, b) { return a && b && a.y === b.y && a.x === b.x; }
   function squareName(y, x) { return `${files[x]}${8 - y}`; }
   function farsiMoveNumber(n) { return String(n).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
+
+  function boardPlacement(board = state.board) {
+    return board.map(row => {
+      let empty = 0;
+      let notation = '';
+      row.forEach(piece => {
+        if (!piece) { empty++; return; }
+        if (empty) { notation += empty; empty = 0; }
+        const letter = piece.type === 'n' ? 'n' : piece.type;
+        notation += piece.color === 'w' ? letter.toUpperCase() : letter;
+      });
+      return `${notation}${empty || ''}`;
+    }).join('/');
+  }
+
+  function castlingFen() {
+    const rights = `${state.castling.wK ? 'K' : ''}${state.castling.wQ ? 'Q' : ''}${state.castling.bK ? 'k' : ''}${state.castling.bQ ? 'q' : ''}`;
+    return rights || '-';
+  }
+
+  function positionKey() {
+    return `${boardPlacement()} ${state.turn} ${castlingFen()} ${state.enPassant ? squareName(state.enPassant.y, state.enPassant.x) : '-'}`;
+  }
+
+  function toFen() {
+    return `${positionKey()} ${state.halfmoveClock} ${state.fullmoveNumber}`;
+  }
+
+  function squareFromName(name) {
+    if (!/^[a-h][1-8]$/.test(name)) return null;
+    return { x: files.indexOf(name[0]), y: 8 - Number(name[1]) };
+  }
+
+  function loadFen(fen) {
+    const parts = fen.trim().split(/\s+/);
+    if (parts.length !== 6) throw new Error('فرمت FEN باید شامل ۶ بخش باشد.');
+    const rows = parts[0].split('/');
+    if (rows.length !== 8 || !/^[wb]$/.test(parts[1])) throw new Error('چیدمان یا نوبت بازی معتبر نیست.');
+    const board = Array.from({ length: 8 }, () => Array(8).fill(null));
+    let kings = { w: 0, b: 0 };
+    rows.forEach((row, y) => {
+      let x = 0;
+      for (const symbol of row) {
+        if (/^[1-8]$/.test(symbol)) { x += Number(symbol); continue; }
+        if (!/^[prnbqkPRNBQK]$/.test(symbol) || x > 7) throw new Error('مهره‌ای نامعتبر در FEN وجود دارد.');
+        const type = symbol.toLowerCase();
+        const color = symbol === symbol.toUpperCase() ? 'w' : 'b';
+        board[y][x] = makePiece(type, color);
+        if (type === 'k') kings[color]++;
+        x++;
+      }
+      if (x !== 8) throw new Error('هر ردیف FEN باید دقیقاً ۸ خانه داشته باشد.');
+    });
+    if (kings.w !== 1 || kings.b !== 1) throw new Error('هر موقعیت باید دقیقاً یک شاه سفید و یک شاه سیاه داشته باشد.');
+    const castling = { wK: parts[2].includes('K'), wQ: parts[2].includes('Q'), bK: parts[2].includes('k'), bQ: parts[2].includes('q') };
+    if (parts[2] !== '-' && !/^[KQkq]+$/.test(parts[2])) throw new Error('حق قلعه‌رفتن معتبر نیست.');
+    const enPassant = parts[3] === '-' ? null : squareFromName(parts[3]);
+    if (parts[3] !== '-' && !enPassant) throw new Error('خانه‌ی آن‌پاسان معتبر نیست.');
+    const halfmoveClock = Number(parts[4]);
+    const fullmoveNumber = Number(parts[5]);
+    if (!Number.isInteger(halfmoveClock) || halfmoveClock < 0 || !Number.isInteger(fullmoveNumber) || fullmoveNumber < 1) throw new Error('شمارنده‌های FEN معتبر نیستند.');
+
+    state.board = board;
+    state.turn = parts[1];
+    state.castling = castling;
+    state.enPassant = enPassant;
+    state.halfmoveClock = halfmoveClock;
+    state.fullmoveNumber = fullmoveNumber;
+    state.positionHistory = [positionKey()];
+    state.moves = [];
+    state.snapshots = [];
+    state.capturedBy = { w: [], b: [] };
+    state.lastMove = null;
+    state.selected = null;
+    state.legalMoves = [];
+    state.hint = null;
+    state.pendingPromotion = null;
+    state.gameOver = false;
+    state.result = '';
+    state.resultDescription = '';
+    state.resumable = false;
+  }
+
+  function hasInsufficientMaterial() {
+    const minorPieces = [];
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        const piece = state.board[y][x];
+        if (!piece || piece.type === 'k') continue;
+        if (piece.type === 'p' || piece.type === 'r' || piece.type === 'q') return false;
+        minorPieces.push({ ...piece, squareColor: (x + y) % 2 });
+      }
+    }
+    if (!minorPieces.length) return true;
+    if (minorPieces.length === 1) return true;
+    return minorPieces.every(piece => piece.type === 'b') && minorPieces.every(piece => piece.squareColor === minorPieces[0].squareColor);
+  }
 
   function clearPath(board, from, to) {
     const stepY = Math.sign(to.y - from.y);
@@ -673,6 +795,9 @@
       boardEl.classList.add('three-ready');
       boardStage.classList.add('three-stage');
       canvas.addEventListener('click', handleThreeCanvasClick);
+      canvas.addEventListener('pointerdown', handleThreePointerDown);
+      canvas.addEventListener('pointerup', handleThreePointerUp);
+      canvas.addEventListener('pointercancel', clearThreeDrag);
       canvas.addEventListener('pointermove', handleThreeCanvasHover, { passive: true });
       canvas.addEventListener('webglcontextlost', handleWebGLContextLost, false);
       window.addEventListener('resize', () => { if (threeBoard) syncThreeBoard(); }, { passive: true });
@@ -711,8 +836,40 @@
   }
 
   function handleThreeCanvasClick(event) {
+    if (threeBoard?.suppressClick) {
+      threeBoard.suppressClick = false;
+      return;
+    }
     const square = resolveThreeSquare(event);
     if (square) handleSquareTarget(square);
+  }
+
+  function clearThreeDrag() {
+    if (!threeBoard) return;
+    threeBoard.dragSource = null;
+    threeBoard.canvas.style.cursor = 'default';
+  }
+
+  function handleThreePointerDown(event) {
+    if (!threeBoard || !state.gameStarted || state.gameOver || state.botThinking) return;
+    const square = resolveThreeSquare(event);
+    const piece = square && state.board[square.y][square.x];
+    if (!piece || piece.color !== state.turn) return;
+    threeBoard.dragSource = square;
+    threeBoard.canvas.setPointerCapture?.(event.pointerId);
+    threeBoard.canvas.style.cursor = 'grabbing';
+    handleSquareTarget(square);
+  }
+
+  function handleThreePointerUp(event) {
+    if (!threeBoard || !threeBoard.dragSource) return;
+    const from = threeBoard.dragSource;
+    const to = resolveThreeSquare(event);
+    threeBoard.dragSource = null;
+    threeBoard.suppressClick = true;
+    threeBoard.canvas.releasePointerCapture?.(event.pointerId);
+    threeBoard.canvas.style.cursor = 'pointer';
+    if (to && !sameSquare(from, to)) handleSquareTarget(to);
   }
 
   function handleThreeCanvasHover(event) {
@@ -875,8 +1032,9 @@
     const inCheck = isKingInCheck(state.turn);
     const colorName = state.turn === 'w' ? 'سفید' : 'سیاه';
     const idle = !state.gameStarted;
-    document.getElementById('statusText').textContent = state.gameOver ? state.result : (idle ? 'آماده‌ی شروع دوئل' : `بازی دوستانه · نوبت ${colorName}${inCheck ? ' · کیش' : ''}`);
-    document.getElementById('turnTitle').textContent = state.gameOver ? 'نبرد تمام شد' : (idle ? 'دوئل آماده است' : `نوبت ${colorName} است`);
+    const botTurn = state.mode === 'bot' && state.botThinking;
+    document.getElementById('statusText').textContent = state.gameOver ? state.result : (idle ? 'آماده‌ی شروع دوئل' : (botTurn ? 'استاد هوشمند · در حال فکر کردن' : `بازی دوستانه · نوبت ${colorName}${inCheck ? ' · کیش' : ''}`));
+    document.getElementById('turnTitle').textContent = state.gameOver ? 'نبرد تمام شد' : (idle ? 'دوئل آماده است' : (botTurn ? 'استاد در حال انتخاب حرکت است' : `نوبت ${colorName} است`));
     document.getElementById('turnHint').textContent = state.gameOver ? state.resultDescription : (idle ? 'برای آغاز، دکمه‌ی شروع دوئل را بزنید' : (inCheck ? 'شاه در کیش است؛ باید از او محافظت کنید' : `یک مهره‌ی ${colorName} را انتخاب کنید`));
     document.querySelector('.turn-piece').textContent = state.gameOver ? '♔' : unicodePieces[state.turn].p;
     document.getElementById('moveCounter').textContent = `حرکت ${farsiMoveNumber(Math.ceil(state.moves.length / 2))} از ۶۰`;
@@ -890,6 +1048,7 @@
     wStatus.className = whiteChecked ? 'warning' : 'safe';
     bStatus.className = blackChecked ? 'warning' : 'safe';
     document.getElementById('lastMoveText').textContent = state.moves.length ? state.moves[state.moves.length - 1].notation : '—';
+    document.getElementById('blackPlayerName').textContent = state.mode === 'bot' && state.botColor === 'b' ? 'استاد هوشمند' : 'آرش سلیمانی';
     document.getElementById('focusLabel').textContent = state.focused ? 'روشن' : 'خاموش';
     document.getElementById('soundLabel').textContent = soundOn ? 'روشن' : 'خاموش';
     document.getElementById('themeLabel').textContent = document.body.classList.contains('alt-light') ? 'کهربایی' : 'زمردی';
@@ -938,6 +1097,7 @@
     document.getElementById('endgameTitle').textContent = title;
     document.getElementById('endgameDescription').textContent = description;
     endgameModal.hidden = false;
+    persistGame();
     renderStatus();
   }
 
@@ -951,11 +1111,15 @@
     if (captured) state.capturedBy[piece.color].push(captured);
     updateCastlingRights(piece, from, captured, { y: move.y, x: move.x });
     state.enPassant = move.special === 'double-pawn' ? { y: (from.y + move.y) / 2, x: from.x } : null;
+    state.halfmoveClock = piece.type === 'p' || captured ? 0 : state.halfmoveClock + 1;
+    if (piece.color === 'b') state.fullmoveNumber++;
     state.lastMove = { from: { ...from }, to: { y: move.y, x: move.x } };
     state.selected = null;
     state.legalMoves = [];
     state.hint = null;
     state.turn = opposite(piece.color);
+    state.positionHistory.push(positionKey());
+    state.resumable = true;
 
     const enemyInCheck = isKingInCheck(state.turn);
     const replies = getAllLegalMoves(state.turn);
@@ -971,12 +1135,20 @@
       } else {
         gameEnd = { title: 'پات · بازی مساوی شد', description: 'بازیکنِ نوبت‌دار حرکتی قانونی ندارد، اما شاه در کیش نیست.' };
       }
+    } else if (state.halfmoveClock >= 100) {
+      gameEnd = { title: 'تساوی · قانون ۵۰ حرکت', description: 'در ۵۰ حرکت اخیر هیچ پیاده‌ای حرکت نکرده و هیچ مهره‌ای گرفته نشده است.' };
+    } else if (state.positionHistory.filter(key => key === positionKey()).length >= 3) {
+      gameEnd = { title: 'تساوی · تکرار سه‌باره', description: 'یک موقعیت یکسان برای سومین بار روی صفحه تکرار شد.' };
+    } else if (hasInsufficientMaterial()) {
+      gameEnd = { title: 'تساوی · مهره‌ی ناکافی', description: 'با مهره‌های باقی‌مانده، کیش‌ومات ممکن نیست.' };
     }
     const notation = makeNotation(piece, from, move, captured, promotion, suffix);
     state.moves.push({ notation, color: piece.color });
     playMoveSound(captured ? 'capture' : 'move');
+    persistGame();
     render();
     if (gameEnd) endGame(gameEnd.title, gameEnd.description);
+    else if (state.mode === 'bot' && state.turn === state.botColor) scheduleBotMove();
   }
 
   function beginMove(from, move) {
@@ -991,7 +1163,7 @@
   }
 
   function handleSquareTarget(target) {
-    if (!target || !state.gameStarted || state.gameOver || state.pendingPromotion) return;
+    if (!target || !state.gameStarted || state.gameOver || state.pendingPromotion || state.botThinking) return;
     const selectedMove = state.legalMoves.find(move => move.y === target.y && move.x === target.x);
     if (state.selected && selectedMove) {
       beginMove(state.selected, selectedMove);
@@ -1025,19 +1197,28 @@
       return;
     }
     restoreSnapshot(state.snapshots.pop());
+    state.resumable = true;
     endgameModal.hidden = true;
+    persistGame();
     render();
     showToast('آخرین حرکت بازگردانده شد.');
   }
 
   function newGame() {
+    const mode = state.mode;
+    const botColor = state.botColor;
     resetState();
+    state.mode = mode;
+    state.botColor = botColor;
     state.gameStarted = true;
+    state.resumable = true;
+    state.autoSave = true;
     promotionModal.hidden = true;
     endgameModal.hidden = true;
     closeGameMenu();
+    persistGame();
     render();
-    showToast('بازی تازه آماده است؛ سفید آغاز می‌کند.');
+    showToast(state.mode === 'bot' ? 'نبرد با استاد هوشمند آماده است؛ سفید آغاز می‌کند.' : 'بازی تازه آماده است؛ سفید آغاز می‌کند.');
   }
 
   function resignGame() {
@@ -1058,6 +1239,154 @@
     const tip = coachTips[Math.floor(Math.random() * coachTips.length)];
     document.getElementById('coachText').textContent = `پیشنهاد: ${squareName(suggestion.from.y, suggestion.from.x)} به ${squareName(suggestion.move.y, suggestion.move.x)}. ${tip}`;
     render();
+  }
+
+  const STORAGE_KEY = 'shahmat-offline-game-v3';
+
+  function persistGame() {
+    if (!state.autoSave || typeof localStorage === 'undefined') return;
+    try {
+      const payload = {
+        version: 3,
+        board: state.board.map(row => row.map(piece => piece ? { type: piece.type, color: piece.color } : null)),
+        turn: state.turn,
+        lastMove: state.lastMove,
+        moves: state.moves,
+        castling: state.castling,
+        enPassant: state.enPassant,
+        capturedBy: state.capturedBy,
+        timers: state.timers,
+        halfmoveClock: state.halfmoveClock,
+        fullmoveNumber: state.fullmoveNumber,
+        positionHistory: state.positionHistory,
+        mode: state.mode,
+        botColor: state.botColor,
+        flipped: state.flipped,
+        focused: state.focused,
+        autoSave: state.autoSave,
+        gameOver: state.gameOver,
+        result: state.result,
+        resultDescription: state.resultDescription,
+        savedAt: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      const status = document.getElementById('saveStatus');
+      if (status) status.textContent = 'ذخیره شد';
+    } catch {
+      // Storage can be unavailable in private browsing; the game still works normally.
+    }
+  }
+
+  function restorePersistedGame() {
+    if (typeof localStorage === 'undefined') return false;
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (!saved || saved.version !== 3 || !Array.isArray(saved.board) || saved.board.length !== 8) return false;
+      idCounter = 0;
+      state.board = saved.board.map(row => {
+        if (!Array.isArray(row) || row.length !== 8) throw new Error('invalid saved board');
+        return row.map(piece => piece ? makePiece(piece.type, piece.color) : null);
+      });
+      if (!findKing(state.board, 'w') || !findKing(state.board, 'b')) throw new Error('missing king');
+      state.turn = saved.turn === 'b' ? 'b' : 'w';
+      state.lastMove = clonePlain(saved.lastMove);
+      state.moves = Array.isArray(saved.moves) ? saved.moves : [];
+      state.snapshots = [];
+      state.castling = { wK: Boolean(saved.castling?.wK), wQ: Boolean(saved.castling?.wQ), bK: Boolean(saved.castling?.bK), bQ: Boolean(saved.castling?.bQ) };
+      state.enPassant = saved.enPassant && inside(saved.enPassant.y, saved.enPassant.x) ? saved.enPassant : null;
+      state.capturedBy = { w: Array.isArray(saved.capturedBy?.w) ? saved.capturedBy.w : [], b: Array.isArray(saved.capturedBy?.b) ? saved.capturedBy.b : [] };
+      state.timers = { w: Math.max(0, Number(saved.timers?.w) || 600), b: Math.max(0, Number(saved.timers?.b) || 600) };
+      state.halfmoveClock = Math.max(0, Number(saved.halfmoveClock) || 0);
+      state.fullmoveNumber = Math.max(1, Number(saved.fullmoveNumber) || 1);
+      state.positionHistory = Array.isArray(saved.positionHistory) && saved.positionHistory.length ? saved.positionHistory : [positionKey()];
+      state.mode = saved.mode === 'bot' ? 'bot' : 'local';
+      state.botColor = saved.botColor === 'w' ? 'w' : 'b';
+      state.flipped = Boolean(saved.flipped);
+      state.focused = Boolean(saved.focused);
+      state.botThinking = false;
+      state.autoSave = saved.autoSave !== false;
+      state.gameOver = Boolean(saved.gameOver);
+      state.result = typeof saved.result === 'string' ? saved.result : '';
+      state.resultDescription = typeof saved.resultDescription === 'string' ? saved.resultDescription : '';
+      state.resumable = !state.gameOver;
+      state.gameStarted = false;
+      return true;
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      return false;
+    }
+  }
+
+  function clearPersistedGame() {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY);
+    state.autoSave = false;
+    const status = document.getElementById('saveStatus');
+    if (status) status.textContent = 'خاموش شد';
+    showToast('ذخیره‌ی محلی پاک و ذخیره‌ی خودکار برای این بازی خاموش شد.');
+  }
+
+  async function copyFen() {
+    try {
+      await navigator.clipboard.writeText(toFen());
+      showToast('FEN موقعیت فعلی کپی شد.');
+    } catch {
+      showToast('مرورگر اجازه‌ی کپی FEN را نداد.');
+    }
+  }
+
+  function importFen() {
+    const fen = window.prompt('کد FEN موقعیت را وارد کنید:', toFen());
+    if (!fen) return;
+    try {
+      loadFen(fen);
+      state.gameStarted = true;
+      state.autoSave = true;
+      persistGame();
+      render();
+      showToast('موقعیت FEN با موفقیت بارگذاری شد.');
+      if (state.mode === 'bot' && state.turn === state.botColor) scheduleBotMove();
+    } catch (error) {
+      showToast(error.message || 'کد FEN معتبر نیست.');
+    }
+  }
+
+  function materialValue(type) {
+    return { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 }[type] || 0;
+  }
+
+  function chooseBotMove() {
+    const choices = getAllLegalMoves(state.botColor);
+    if (!choices.length) return null;
+    return choices.map(choice => {
+      const piece = state.board[choice.from.y][choice.from.x];
+      const captured = choice.move.special === 'en-passant' ? state.board[choice.from.y][choice.move.x] : state.board[choice.move.y][choice.move.x];
+      const nextBoard = applyMoveToBoard(state.board, choice.from, choice.move, choice.move.y === 0 || choice.move.y === 7 ? 'q' : null);
+      let score = (captured ? materialValue(captured.type) * 10 : 0) + materialValue(piece.type) / 100;
+      score += isKingInCheck(opposite(state.botColor), nextBoard) ? 125 : 0;
+      score += choice.move.special?.startsWith('castle') ? 35 : 0;
+      score += (3.5 - Math.abs(choice.move.x - 3.5) + 3.5 - Math.abs(choice.move.y - 3.5)) * 3;
+      score += Math.random() * 18;
+      return { ...choice, score };
+    }).sort((a, b) => b.score - a.score)[0];
+  }
+
+  function scheduleBotMove() {
+    if (state.mode !== 'bot' || state.turn !== state.botColor || state.gameOver || state.botThinking) return;
+    state.botThinking = true;
+    renderStatus();
+    window.setTimeout(() => {
+      if (!state.botThinking || state.gameOver || state.turn !== state.botColor) return;
+      if (document.body.classList.contains('menu-open')) {
+        state.botThinking = false;
+        window.setTimeout(scheduleBotMove, 350);
+        return;
+      }
+      const choice = chooseBotMove();
+      state.botThinking = false;
+      if (!choice) return;
+      const promotion = choice.move.y === 0 || choice.move.y === 7 ? 'q' : null;
+      completeMove(choice.from, choice.move, promotion);
+    }, 520);
   }
 
   function showToast(message) {
@@ -1123,7 +1452,7 @@
     if (state.gameOver) {
       startLabel.textContent = 'شروع بازی تازه';
       startSubline.textContent = 'چیدمان جدید · ساعت تازه';
-    } else if (state.gameStarted) {
+    } else if (state.gameStarted || state.resumable) {
       startLabel.textContent = 'ادامه‌ی دوئل';
       startSubline.textContent = 'بازی تا بازگشت شما متوقف است';
     } else {
@@ -1138,10 +1467,28 @@
       endgameModal.hidden = true;
     }
     state.gameStarted = true;
+    state.resumable = true;
+    state.autoSave = true;
+    persistGame();
     mainMenu.classList.add('is-hidden');
     document.body.classList.remove('menu-open');
     render();
-    showToast('دوئل آغاز شد؛ نوبت مهره‌های سفید است.');
+    showToast(state.mode === 'bot' ? 'نبرد با استاد هوشمند ادامه پیدا کرد.' : 'دوئل آغاز شد؛ نوبت مهره‌های سفید است.');
+    if (state.mode === 'bot' && state.turn === state.botColor) scheduleBotMove();
+  }
+
+  function startBotGame() {
+    resetState();
+    state.mode = 'bot';
+    state.botColor = 'b';
+    state.gameStarted = true;
+    state.resumable = true;
+    endgameModal.hidden = true;
+    persistGame();
+    mainMenu.classList.add('is-hidden');
+    document.body.classList.remove('menu-open');
+    render();
+    showToast('نبرد با استاد هوشمند شروع شد؛ شما با مهره‌های سفید بازی می‌کنید.');
   }
 
   function flipThreeView() {
@@ -1181,12 +1528,14 @@
       render();
       return;
     }
+    persistGame();
     renderClocks();
   }
 
   function wireControls() {
     boardEl.addEventListener('click', handleSquareClick);
     document.getElementById('startGameButton').addEventListener('click', startGame);
+    document.getElementById('startBotButton').addEventListener('click', startBotGame);
     document.getElementById('mainGuideButton').addEventListener('click', () => {
       const guide = document.getElementById('mainGuide');
       guide.hidden = !guide.hidden;
@@ -1204,6 +1553,9 @@
     document.getElementById('menuTheme').addEventListener('click', toggleTheme);
     document.getElementById('menuSound').addEventListener('click', toggleSound);
     document.getElementById('menuCopyPgn').addEventListener('click', copyPgn);
+    document.getElementById('copyFenButton').addEventListener('click', copyFen);
+    document.getElementById('loadFenButton').addEventListener('click', importFen);
+    document.getElementById('clearSaveButton').addEventListener('click', clearPersistedGame);
     document.getElementById('menuNewGame').addEventListener('click', newGame);
     document.getElementById('menuHome').addEventListener('click', openMainMenu);
     document.getElementById('menuResign').addEventListener('click', resignGame);
@@ -1246,9 +1598,13 @@
   }
 
   resetState();
+  restorePersistedGame();
   initThreeBoard();
   wireControls();
   render();
+  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
   window.setInterval(tickClock, 1000);
 
 })();

@@ -12,9 +12,13 @@ const vm = require('node:vm');
 const appPath = path.join(__dirname, '..', 'app.js');
 let source = fs.readFileSync(appPath, 'utf8');
 const bootSequence = `  resetState();
+  restorePersistedGame();
   initThreeBoard();
   wireControls();
   render();
+  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
   window.setInterval(tickClock, 1000);
 
 })();`;
@@ -28,7 +32,13 @@ const testExports = `  resetState();
     isKingInCheck,
     isSquareAttacked,
     pseudoMoves,
-    applyMoveToBoard
+    applyMoveToBoard,
+    toFen,
+    loadFen,
+    hasInsufficientMaterial,
+    positionKey,
+    persistGame,
+    restorePersistedGame
   };
 })();`;
 
@@ -47,8 +57,15 @@ const fakeElement = {
   innerHTML: '',
   hidden: false
 };
+const storage = new Map();
+const localStorage = {
+  getItem: key => storage.has(key) ? storage.get(key) : null,
+  setItem: (key, value) => storage.set(key, String(value)),
+  removeItem: key => storage.delete(key)
+};
 const context = {
   console,
+  localStorage,
   document: {
     getElementById: () => fakeElement,
     querySelector: () => fakeElement,
@@ -75,6 +92,9 @@ function emptyPosition(turn = 'w') {
   state.castling = { wK: false, wQ: false, bK: false, bQ: false };
   state.enPassant = null;
   state.gameOver = false;
+  state.halfmoveClock = 0;
+  state.fullmoveNumber = 1;
+  state.positionHistory = [];
   return state;
 }
 
@@ -298,6 +318,65 @@ test('a textbook corner checkmate has no legal reply', () => {
   place('q', 'w', 1, 1); // b7
   assert.equal(chess.isKingInCheck('b'), true);
   assert.equal(chess.getAllLegalMoves('b').length, 0);
+});
+
+test('FEN serialisation preserves the initial board and counters', () => {
+  chess.resetState();
+  assert.equal(chess.toFen(), 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+});
+
+test('FEN loading restores board, turn, castling and en passant', () => {
+  chess.resetState();
+  chess.loadFen('r3k2r/ppp2ppp/2n1bn2/3qp3/3P4/2N1PN2/PPP2PPP/R3K2R b KQkq d3 7 12');
+  const state = chess.getState();
+  assert.equal(state.turn, 'b');
+  assert.equal(state.board[0][4].type, 'k');
+  assert.equal(state.board[7][4].color, 'w');
+  assert.equal(state.castling.bQ, true);
+  assert.equal(state.enPassant.x, 3);
+  assert.equal(state.enPassant.y, 5);
+  assert.equal(state.halfmoveClock, 7);
+  assert.equal(state.fullmoveNumber, 12);
+});
+
+test('local persistence restores a paused resumable game with settings', () => {
+  chess.resetState();
+  const before = chess.getState();
+  before.timers = { w: 543, b: 411 };
+  before.mode = 'bot';
+  before.botColor = 'b';
+  before.flipped = true;
+  before.focused = true;
+  before.gameStarted = true;
+  before.resumable = true;
+  chess.persistGame();
+  chess.resetState();
+  assert.equal(chess.restorePersistedGame(), true);
+  const after = chess.getState();
+  assert.equal(after.timers.w, 543);
+  assert.equal(after.timers.b, 411);
+  assert.equal(after.mode, 'bot');
+  assert.equal(after.flipped, true);
+  assert.equal(after.focused, true);
+  assert.equal(after.gameStarted, false);
+  assert.equal(after.resumable, true);
+});
+
+test('invalid FEN input is rejected without silently changing position', () => {
+  chess.resetState();
+  assert.throws(() => chess.loadFen('not a valid FEN'));
+  assert.equal(chess.toFen(), 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+});
+
+test('insufficient material detects bare kings and a single minor piece', () => {
+  emptyPosition();
+  place('k', 'w', 7, 4);
+  place('k', 'b', 0, 4);
+  assert.equal(chess.hasInsufficientMaterial(), true);
+  place('n', 'w', 5, 2);
+  assert.equal(chess.hasInsufficientMaterial(), true);
+  place('p', 'b', 1, 0);
+  assert.equal(chess.hasInsufficientMaterial(), false);
 });
 
 console.log('\nAll chess-engine regression tests passed.');

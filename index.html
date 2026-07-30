@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b1214" />
     <meta name="description" content="شاه‌مات؛ تجربه‌ی سه‌بعدی و حرفه‌ای شطرنج در مرورگر" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <title>شاه‌مات | شطرنج سه‌بعدی</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -37,6 +40,7 @@
         <p class="menu-description">یک دوئل کلاسیک روی یک دستگاه؛ با قوانین کامل شطرنج، ساعت رقابتی و صفحه‌ای که برای هر حرکت نفس می‌کشد.</p>
         <div class="menu-primary-actions">
           <button class="menu-play-button" id="startGameButton" type="button"><span class="play-icon">▶</span><span><b id="startGameText">شروع دوئل</b><small>دو بازیکن · یک دستگاه</small></span></button>
+          <button class="menu-bot-button" id="startBotButton" type="button"><span>♟</span><span><b>نبرد با استاد هوشمند</b><small>حریف محلی · سطح تاکتیکی</small></span></button>
           <button class="menu-how-button" id="mainGuideButton" type="button"><span>؟</span> راهنمای سریع</button>
         </div>
         <div class="main-guide" id="mainGuide" hidden>
@@ -99,6 +103,15 @@
         </div>
       </details>
 
+      <details class="drawer-details archive-details">
+        <summary><span>ذخیره و موقعیت</span><small id="saveStatus">خودکار</small></summary>
+        <div class="archive-actions">
+          <button id="copyFenButton" type="button"><span>⌘</span> کپی FEN</button>
+          <button id="loadFenButton" type="button"><span>⇩</span> بارگذاری FEN</button>
+          <button id="clearSaveButton" type="button"><span>×</span> پاک‌کردن ذخیره</button>
+        </div>
+      </details>
+
       <div class="drawer-utility">
         <button id="menuSound" type="button"><span>◖</span><b>صدای حرکت</b><small id="soundLabel">روشن</small></button>
         <button id="menuTheme" type="button"><span>☼</span><b>نور صحنه</b><small id="themeLabel">زمردی</small></button>
@@ -122,7 +135,7 @@
 
         <section class="player-rail dark-rail" id="blackCard" aria-label="بازیکن سیاه">
           <div class="avatar opponent-avatar"><span></span></div>
-          <div class="rail-details"><strong>آرش سلیمانی</strong><small><span class="signal"></span> بازیکن سیاه</small></div>
+          <div class="rail-details"><strong id="blackPlayerName">آرش سلیمانی</strong><small><span class="signal"></span> بازیکن سیاه</small></div>
           <div class="clock dark-clock" id="blackClock">10:00</div>
         </section>
 
