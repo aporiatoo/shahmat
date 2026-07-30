@@ -417,11 +417,11 @@
   }
 
   const STORY_CHARACTERS = {
-    lian: { name: 'لیان، دیده‌بان زمرد', title: 'تاکتیک‌دان مرکز', style: 'tactical', environment: 'emerald', image: 'assets/story/lian-emerald.png', quote: 'مرکز صفحه، قلب هر پادشاهی است.' },
-    sahar: { name: 'سحر، حافظه‌ی کتابخانه', title: 'استاد افتتاحیه', style: 'positional', environment: 'library', image: 'assets/story/sahar-library.png', quote: 'هر حرکت خوب، سایه‌ای از حرکت پیشین دارد.' },
-    azar: { name: 'آذر، بانوی مرمر', title: 'مهاجم روشن', style: 'aggressive', environment: 'marble', image: 'assets/story/azar-marble.png', quote: 'گاهی بهترین دفاع، حمله‌ای بی‌پرواست.' },
-    vared: { name: 'وارد، سپر آبسیدین', title: 'مدافع قلعه', style: 'defensive', environment: 'obsidian', image: 'assets/story/vared-obsidian.png', quote: 'هیچ دیواری بدون صبر فرو نمی‌ریزد.' },
-    shahbanou: { name: 'شهبانو، نگهبان تالار ایرانی', title: 'باس نهایی', style: 'tactical', environment: 'persian', image: 'assets/story/shahbanou-persian.png', quote: 'تاج را کسی می‌برد که در سکوت هم نقشه می‌کشد.' }
+    lian: { name: 'لیان، دیده‌بان زمرد', title: 'تاکتیک‌دان مرکز', style: 'tactical', environment: 'emerald', image: 'assets/story/lian-portrait.png', quote: 'مرکز صفحه، قلب هر پادشاهی است.' },
+    sahar: { name: 'سحر، حافظه‌ی کتابخانه', title: 'استاد افتتاحیه', style: 'positional', environment: 'library', image: 'assets/story/sahar-portrait.png', quote: 'هر حرکت خوب، سایه‌ای از حرکت پیشین دارد.' },
+    azar: { name: 'آذر، بانوی مرمر', title: 'مهاجم روشن', style: 'aggressive', environment: 'marble', image: 'assets/story/azar-portrait.png', quote: 'گاهی بهترین دفاع، حمله‌ای بی‌پرواست.' },
+    vared: { name: 'وارد، سپر آبسیدین', title: 'مدافع قلعه', style: 'defensive', environment: 'obsidian', image: 'assets/story/vared-portrait.png', quote: 'هیچ دیواری بدون صبر فرو نمی‌ریزد.' },
+    shahbanou: { name: 'شهبانو، نگهبان تالار ایرانی', title: 'باس نهایی', style: 'tactical', environment: 'persian', image: 'assets/story/shahbanou-portrait.png', quote: 'تاج را کسی می‌برد که در سکوت هم نقشه می‌کشد.' }
   };
 
   const STORY_CHAPTERS = [
