@@ -13,6 +13,7 @@ const appPath = path.join(__dirname, '..', 'app.js');
 let source = fs.readFileSync(appPath, 'utf8');
 const bootSequence = `  resetState();
   restorePersistedGame();
+  setEnvironment(state.environment);
   initThreeBoard();
   wireControls();
   render();
@@ -41,7 +42,8 @@ const testExports = `  resetState();
     restorePersistedGame,
     setTimeControl,
     setDifficulty,
-    setGraphicsQuality
+    setGraphicsQuality,
+    setEnvironment
   };
 })();`;
 
@@ -401,6 +403,14 @@ test('difficulty and graphics quality reject invalid configuration values', () =
   chess.setGraphicsQuality('unknown');
   assert.equal(chess.getState().difficulty, 'normal');
   assert.equal(chess.getState().graphicsQuality, 'balanced');
+});
+
+test('environment presets accept valid styles and reject invalid values', () => {
+  chess.resetState();
+  chess.setEnvironment('persian');
+  assert.equal(chess.getState().environment, 'persian');
+  chess.setEnvironment('unknown');
+  assert.equal(chess.getState().environment, 'emerald');
 });
 
 test('insufficient material detects bare kings and a single minor piece', () => {

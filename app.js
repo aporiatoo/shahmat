@@ -69,6 +69,9 @@
       increment: 0,
       difficulty: 'normal',
       graphicsQuality: 'balanced',
+      environment: 'emerald',
+      botMessage: 'برای کنترل مرکز آماده باشید.',
+      directorFocus: null,
       halfmoveClock: 0,
       fullmoveNumber: 1,
       positionHistory: [],
@@ -116,6 +119,8 @@
       increment: state.increment,
       difficulty: state.difficulty,
       graphicsQuality: state.graphicsQuality,
+      environment: state.environment,
+      botMessage: state.botMessage,
       halfmoveClock: state.halfmoveClock,
       fullmoveNumber: state.fullmoveNumber,
       positionHistory: clonePlain(state.positionHistory),
@@ -149,6 +154,8 @@
     state.increment = Number(snapshot.increment) || 0;
     state.difficulty = ['easy', 'normal', 'hard'].includes(snapshot.difficulty) ? snapshot.difficulty : 'normal';
     state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(snapshot.graphicsQuality) ? snapshot.graphicsQuality : 'balanced';
+    state.environment = ['emerald', 'library', 'marble', 'obsidian', 'persian'].includes(snapshot.environment) ? snapshot.environment : 'emerald';
+    state.botMessage = snapshot.botMessage || 'برای کنترل مرکز آماده باشید.';
     state.halfmoveClock = snapshot.halfmoveClock ?? 0;
     state.fullmoveNumber = snapshot.fullmoveNumber ?? 1;
     state.positionHistory = clonePlain(snapshot.positionHistory) || [positionKey()];
@@ -286,6 +293,14 @@
   function setGraphicsQuality(quality) {
     state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(quality) ? quality : 'balanced';
     applyGraphicsQuality();
+    updateLaunchSettingsUI();
+  }
+
+  function setEnvironment(environment) {
+    state.environment = ['emerald', 'library', 'marble', 'obsidian', 'persian'].includes(environment) ? environment : 'emerald';
+    document.body.classList.remove('env-library', 'env-marble', 'env-obsidian', 'env-persian');
+    if (state.environment !== 'emerald') document.body.classList.add(`env-${state.environment}`);
+    syncThreeBoard();
     updateLaunchSettingsUI();
   }
 
@@ -504,15 +519,25 @@
   function configureThreeColors() {
     if (!threeBoard) return;
     const amber = document.body.classList.contains('alt-light');
-    threeBoard.materials.light.color.set(amber ? 0xe9dcc4 : 0xf1ecdd);
+    const palette = {
+      emerald: { light: 0xf1ecdd, dark: 0x1c4039, lightTile: 0xd8c19a, darkTile: 0x46675b, wood: 0x5a351d, edge: 0x1f1712, inlay: 0xd7ac65 },
+      library: { light: 0xf0dfc2, dark: 0x3f2419, lightTile: 0xcbb28a, darkTile: 0x6b4a35, wood: 0x4b2c18, edge: 0x1b100a, inlay: 0xd09b53 },
+      marble: { light: 0xf4f0e9, dark: 0x34464c, lightTile: 0xded8ce, darkTile: 0x7e8c90, wood: 0x4f5659, edge: 0x242c2d, inlay: 0xd9b663 },
+      obsidian: { light: 0xe6e0d7, dark: 0x2b1720, lightTile: 0x53565b, darkTile: 0x1c1b23, wood: 0x2b131a, edge: 0x12090d, inlay: 0xc66161 },
+      persian: { light: 0xf2e4bf, dark: 0x193d58, lightTile: 0xd2be8b, darkTile: 0x385d74, wood: 0x24465d, edge: 0x0d1f2c, inlay: 0xe0b55c }
+    }[state.environment] || null;
+    const colors = palette || { light: amber ? 0xe9dcc4 : 0xf1ecdd, dark: amber ? 0x4b2924 : 0x1c4039, lightTile: amber ? 0xcdb699 : 0xd8c19a, darkTile: amber ? 0x704c3c : 0x46675b, wood: amber ? 0x5e331e : 0x5a351d, edge: amber ? 0x24130f : 0x1f1712, inlay: amber ? 0xe4a650 : 0xd7ac65 };
+    threeBoard.materials.light.color.set(colors.light);
     threeBoard.materials.lightAccent.color.set(amber ? 0x9e876c : 0xb7aa91);
-    threeBoard.materials.dark.color.set(amber ? 0x4b2924 : 0x1c4039);
+    threeBoard.materials.dark.color.set(colors.dark);
     threeBoard.materials.darkAccent.color.set(amber ? 0x1d100e : 0x0c2723);
-    threeBoard.materials.lightTile.color.set(amber ? 0xcdb699 : 0xd8c19a);
-    threeBoard.materials.darkTile.color.set(amber ? 0x704c3c : 0x46675b);
-    threeBoard.materials.wood.color.set(amber ? 0x5e331e : 0x5a351d);
-    threeBoard.materials.woodEdge.color.set(amber ? 0x24130f : 0x1f1712);
-    threeBoard.materials.frameInlay.color.set(amber ? 0xe4a650 : 0xd7ac65);
+    threeBoard.materials.inlay.color.set(colors.inlay);
+    threeBoard.materials.darkInlay.color.set(state.environment === 'obsidian' ? 0xc25a74 : amber ? 0xbd674d : 0x5eb69e);
+    threeBoard.materials.lightTile.color.set(colors.lightTile);
+    threeBoard.materials.darkTile.color.set(colors.darkTile);
+    threeBoard.materials.wood.color.set(colors.wood);
+    threeBoard.materials.woodEdge.color.set(colors.edge);
+    threeBoard.materials.frameInlay.color.set(colors.inlay);
   }
 
   function applyGraphicsQuality() {
@@ -713,6 +738,9 @@
     } else if (kind === 'hint') {
       marker = new THREE.Mesh(new THREE.OctahedronGeometry(.12, 1), materials.hint);
       y += .11;
+    } else if (kind === 'last') {
+      marker = new THREE.Mesh(new THREE.TorusGeometry(.34, .027, 10, 38), materials.last);
+      marker.rotation.x = Math.PI / 2;
     } else {
       marker = new THREE.Mesh(new THREE.BoxGeometry(.88, .028, .88), materials[kind]);
     }
@@ -729,13 +757,15 @@
     const { camera, target, desiredCamera, desiredTarget } = threeBoard;
     const selectedPiece = state.selected && state.board[state.selected.y][state.selected.x];
     const followsPlayerPiece = selectedPiece?.color === state.playerColor;
-    const selectedX = followsPlayerPiece ? state.selected.x - 3.5 : 0;
-    const selectedZ = followsPlayerPiece ? state.selected.y - 3.5 : 0;
+    const dramatic = state.directorFocus && Date.now() < state.directorFocus.until;
+    const focusSquare = followsPlayerPiece ? state.selected : (dramatic ? state.directorFocus : null);
+    const selectedX = focusSquare ? focusSquare.x - 3.5 : 0;
+    const selectedZ = focusSquare ? focusSquare.y - 3.5 : 0;
     const direction = state.playerColor === 'w' ? 1 : -1;
     const zoom = state.focused ? .91 : 1;
-    desiredTarget.set(selectedX * .48, .34, (followsPlayerPiece ? selectedZ * .42 - direction * .45 : -direction * .55));
-    desiredCamera.set(selectedX * .32, 11.45 * zoom, (followsPlayerPiece ? selectedZ + direction * 11.05 : direction * 13.9) * zoom);
-    camera.fov = state.focused ? 43 : 47;
+    desiredTarget.set(selectedX * (focusSquare ? .62 : .48), dramatic ? .46 : .34, (focusSquare ? selectedZ * .48 - direction * .42 : -direction * .55));
+    desiredCamera.set(selectedX * (focusSquare ? .42 : .32), (dramatic ? 10.7 : 11.45) * zoom, (focusSquare ? selectedZ + direction * 10.35 : direction * 13.9) * zoom);
+    camera.fov = dramatic ? 40 : state.focused ? 43 : 47;
     if (!threeBoard.cameraReady) {
       camera.position.copy(desiredCamera);
       target.copy(desiredTarget);
@@ -809,7 +839,7 @@
     const canvas = document.getElementById('threeCanvas');
     if (!canvas) return;
     try {
-      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setClearColor(0x000000, 0);
       renderer.shadowMap.enabled = true;
@@ -965,10 +995,14 @@
       target.lerp(desiredTarget, .085);
       camera.lookAt(target);
     }
+    if (state.directorFocus && Date.now() >= state.directorFocus.until) {
+      state.directorFocus = null;
+      updateThreeCamera();
+    }
     const time = timestamp * .001;
     indicatorRoot.children.forEach(marker => {
       const kind = marker.userData.markerKind;
-      if (kind === 'legal' || kind === 'hint' || kind === 'check') {
+      if (kind === 'legal' || kind === 'hint' || kind === 'check' || kind === 'last') {
         const pulse = 1 + Math.sin(time * 3.2 + marker.position.x) * .11;
         marker.scale.setScalar(pulse);
       }
@@ -1136,6 +1170,9 @@
     document.getElementById('lastMoveText').textContent = state.moves.length ? state.moves[state.moves.length - 1].notation : '—';
     document.getElementById('blackPlayerName').textContent = state.playerColor === 'b' ? 'مریم' : 'استاد هوشمند';
     document.getElementById('whitePlayerName').textContent = state.playerColor === 'w' ? 'مریم' : 'استاد هوشمند';
+    const levelName = { easy: 'آموزشی', normal: 'تاکتیکی', hard: 'استاد' }[state.difficulty];
+    document.getElementById('blackPlayerRole').textContent = state.playerColor === 'b' ? 'بازیکن انسانی' : `${levelName} · ${state.botMessage}`;
+    document.getElementById('whitePlayerRole').textContent = state.playerColor === 'w' ? 'بازیکن انسانی' : `${levelName} · ${state.botMessage}`;
     const blackAvatar = document.getElementById('blackAvatar');
     const whiteAvatar = document.getElementById('whiteAvatar');
     if (state.playerColor === 'b') {
@@ -1248,6 +1285,33 @@
     updateCareerStatsUI();
   }
 
+  function battleTitle() {
+    const captures = state.capturedBy.w.length + state.capturedBy.b.length;
+    const last = state.moves[state.moves.length - 1]?.notation || '';
+    if (last.includes('#')) return 'محاصره‌ی شاه';
+    if (captures >= 8) return 'نبرد در مرکز';
+    if (state.moves.length <= 20) return 'گشایش جسورانه';
+    if (materialBalance() > 300) return 'برتری درخشان';
+    return 'ردّ نبرد سلطنتی';
+  }
+
+  function battleTrailText() {
+    const recent = state.moves.slice(-6).map(move => move.notation).join(' ← ');
+    return `<b>${battleTitle()}</b>${recent ? ` · مسیر پایانی: ${recent}` : ''}`;
+  }
+
+  function shareBattleSnapshot() {
+    const canvas = threeBoard?.canvas;
+    if (!canvas) { showToast('نمای سه‌بعدی برای ذخیره‌ی تصویر در دسترس نیست.'); return; }
+    try {
+      const link = document.createElement('a');
+      link.download = `shahmat-battle-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('تصویر ردّ نبرد ذخیره شد.');
+    } catch { showToast('مرورگر اجازه‌ی ذخیره‌ی تصویر را نداد.'); }
+  }
+
   function endGame(title, description) {
     state.gameOver = true;
     state.result = title;
@@ -1255,10 +1319,21 @@
     document.getElementById('endgameTitle').textContent = title;
     document.getElementById('endgameDescription').textContent = description;
     document.getElementById('endgameInsights').innerHTML = endgameInsightMarkup();
+    document.getElementById('battleTrail').innerHTML = battleTrailText();
     recordCompletedGame(title, description);
     endgameModal.hidden = false;
     persistGame();
     renderStatus();
+  }
+
+  function makeBotFeedback(piece, move, captured, gaveCheck) {
+    if (gaveCheck) return 'شاه شما زیر فشار است؛ راه امن را پیدا کنید.';
+    if (captured?.type === 'q') return 'وزیر را به‌موقع دیدم؛ نبرد تازه شروع شده است.';
+    if (captured) return 'تبادل مهره‌ها بخشی از نقشه‌ی من بود.';
+    if (move.special?.startsWith('castle')) return 'شاه را به قلعه‌ی امن منتقل کردم.';
+    if (state.difficulty === 'easy') return 'حرکت بعدی شما را با دقت تماشا می‌کنم.';
+    if (state.difficulty === 'hard') return 'خانه‌های کلیدی را زیر نظر دارم.';
+    return 'مرکز صفحه را فراموش نکنید.';
   }
 
   function completeMove(from, move, promotion = null) {
@@ -1304,6 +1379,9 @@
       gameEnd = { title: 'تساوی · مهره‌ی ناکافی', description: 'با مهره‌های باقی‌مانده، کیش‌ومات ممکن نیست.' };
     }
     const notation = makeNotation(piece, from, move, captured, promotion, suffix);
+    if (piece.color === state.botColor) state.botMessage = makeBotFeedback(piece, move, captured, enemyInCheck);
+    else if (captured) state.botMessage = 'تبادل مهمی بود؛ پاسخ من در راه است.';
+    if (captured || enemyInCheck || promotion) state.directorFocus = { x: move.x, y: move.y, until: Date.now() + 1150 };
     state.moves.push({ notation, color: piece.color });
     playMoveSound(captured ? 'capture' : 'move');
     persistGame();
@@ -1370,6 +1448,7 @@
     const timeControl = state.timeControl;
     const difficulty = state.difficulty;
     const graphicsQuality = state.graphicsQuality;
+    const environment = state.environment;
     resetState();
     state.mode = 'bot';
     state.playerColor = playerColor;
@@ -1377,6 +1456,8 @@
     state.botColor = opposite(playerColor);
     state.difficulty = difficulty;
     state.graphicsQuality = graphicsQuality;
+    state.environment = environment;
+    setEnvironment(environment);
     setTimeControl(timeControl);
     state.gameStarted = true;
     state.resumable = true;
@@ -1429,6 +1510,8 @@
         increment: state.increment,
         difficulty: state.difficulty,
         graphicsQuality: state.graphicsQuality,
+        environment: state.environment,
+        botMessage: state.botMessage,
         halfmoveClock: state.halfmoveClock,
         fullmoveNumber: state.fullmoveNumber,
         positionHistory: state.positionHistory,
@@ -1475,6 +1558,8 @@
       state.increment = Number(saved.increment) || TIME_CONTROLS[state.timeControl].increment;
       state.difficulty = ['easy', 'normal', 'hard'].includes(saved.difficulty) ? saved.difficulty : 'normal';
       state.graphicsQuality = ['eco', 'balanced', 'cinematic'].includes(saved.graphicsQuality) ? saved.graphicsQuality : 'balanced';
+      state.environment = ['emerald', 'library', 'marble', 'obsidian', 'persian'].includes(saved.environment) ? saved.environment : 'emerald';
+      state.botMessage = saved.botMessage || 'برای کنترل مرکز آماده باشید.';
       const fallbackTime = TIME_CONTROLS[state.timeControl].initial || 0;
       state.timers = { w: Math.max(0, Number(saved.timers?.w) || fallbackTime), b: Math.max(0, Number(saved.timers?.b) || fallbackTime) };
       state.halfmoveClock = Math.max(0, Number(saved.halfmoveClock) || 0);
@@ -1651,14 +1736,17 @@
     const difficulty = document.getElementById('difficultySelect');
     const time = document.getElementById('timeControlSelect');
     const quality = document.getElementById('qualitySelect');
+    const environment = document.getElementById('environmentSelect');
     if (difficulty) difficulty.value = state.difficulty;
     if (time) time.value = state.timeControl;
     if (quality) quality.value = state.graphicsQuality;
+    if (environment) environment.value = state.environment;
   }
 
   function updateColorChoiceUI() {
     updateLaunchSettingsUI();
     const color = state.playerColor;
+    document.body.classList.toggle('player-black', color === 'b');
     document.querySelectorAll('[data-player-color]').forEach(button => {
       const selected = button.dataset.playerColor === color;
       button.classList.toggle('active', selected);
@@ -1701,6 +1789,7 @@
     const timeControl = state.timeControl;
     const difficulty = state.difficulty;
     const graphicsQuality = state.graphicsQuality;
+    const environment = state.environment;
     if (state.gameOver || state.colorSelectionChanged) {
       resetState();
       endgameModal.hidden = true;
@@ -1708,6 +1797,8 @@
       state.startedPlayerColor = selectedColor;
       state.difficulty = difficulty;
       state.graphicsQuality = graphicsQuality;
+      state.environment = environment;
+      setEnvironment(environment);
       setTimeControl(timeControl);
       state.colorSelectionChanged = false;
     }
@@ -1766,6 +1857,7 @@
     document.getElementById('difficultySelect').addEventListener('change', event => setDifficulty(event.target.value));
     document.getElementById('timeControlSelect').addEventListener('change', event => setTimeControl(event.target.value));
     document.getElementById('qualitySelect').addEventListener('change', event => setGraphicsQuality(event.target.value));
+    document.getElementById('environmentSelect').addEventListener('change', event => setEnvironment(event.target.value));
     document.getElementById('mainGuideButton').addEventListener('click', () => {
       const guide = document.getElementById('mainGuide');
       guide.hidden = !guide.hidden;
@@ -1789,6 +1881,7 @@
     document.getElementById('menuHome').addEventListener('click', openMainMenu);
     document.getElementById('menuResign').addEventListener('click', resignGame);
     document.getElementById('modalNewGame').addEventListener('click', newGame);
+    document.getElementById('shareBattleButton').addEventListener('click', shareBattleSnapshot);
 
     document.getElementById('closePromotion').addEventListener('click', () => {
       state.pendingPromotion = null;
@@ -1825,6 +1918,7 @@
 
   resetState();
   restorePersistedGame();
+  setEnvironment(state.environment);
   initThreeBoard();
   wireControls();
   render();
